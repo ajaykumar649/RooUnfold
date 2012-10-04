@@ -303,13 +303,15 @@ $(DEPDIR)%.d : $(EXESRC)%.cxx
 $(OBJDIR)%.$(ObjSuf) : $(SRCDIR)%.cxx $(HDEP)
 	@echo "Compiling $<"
 	@mkdir -p $(OBJDIR)
-	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+#	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
 
 # Implicit rule to compile intermediate files
 $(OBJDIR)%.$(ObjSuf) : $(WORKDIR)%.cxx $(HDEP)
 	@echo "Compiling $<"
 	@mkdir -p $(OBJDIR)
-	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+#	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
 
 # Implicit rule for Fortran (if any)
 $(OBJDIR)%.$(ObjSuf) : $(SRCDIR)%.for $(FDEP)
@@ -321,28 +323,34 @@ $(OBJDIR)%.$(ObjSuf) : $(SRCDIR)%.for $(FDEP)
 $(OBJDIR)%.$(ObjSuf) : $(EXESRC)%.cxx $(HLIST)
 	@echo "Compiling example program $<"
 	@mkdir -p $(OBJDIR)
-	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+#	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
 
 %.$(ObjSuf) : %.$(SrcSuf) $(HLIST)
 	@echo "Compiling user program $<"
-	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+#	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
 
 %.$(ObjSuf) : %.cc $(HLIST)
 	@echo "Compiling user program $<"
-	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+#	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
 
 %.$(ObjSuf) : %.C $(HLIST)
 	@echo "Compiling user program $<"
-	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+#	$(_)$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@ $(INCLUDES)
 
 # Implicit rules to link main program
 $(EXEDIR)%$(ExeSuf) : $(OBJDIR)%.$(ObjSuf) $(LINKLIB)
 	@echo "Linking example executable $@"
-	$(_)$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
+#	$(_)$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
+	$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
 
 %$(ExeSuf) : %.$(ObjSuf) $(LINKLIB)
 	@echo "Linking user executable $@"
-	$(_)$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
+#	$(_)$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
+	$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
 
 # === Explicit rules ===========================================================
 
@@ -377,6 +385,7 @@ $(LIBFILE) : $(OLIST) $(CINTOBJ)
 # Assumes $(LIBFILE) and $(STATICLIBFILE) are in the same directory
 $(STATICLIBFILE) : $(LIBFILE)
 	@rm -f $@
+#	$(_)ln -s $(patsubst $(dir $@)%,%,$<) $@
 	$(_)ln -s $(patsubst $(dir $@)%,%,$<) $@
 
 # Rule to combine objects into a shared library
@@ -384,7 +393,8 @@ $(SHLIBFILE) : $(OLIST) $(CINTOBJ)
 	@echo "Making $@"
 	@mkdir -p $(SHLIBDIR)
 	@rm -f $@
-	$(_)$(LD) $(SOFLAGS) $(LDFLAGS) $^ $(OutPutOpt)$@ $(ROOTLIBS) $(GCCLIBS)
+#	$(_)$(LD) $(SOFLAGS) $(LDFLAGS) $^ $(OutPutOpt)$@ $(ROOTLIBS) $(GCCLIBS)
+	$(LD) $(SOFLAGS) $(LDFLAGS) $^ $(OutPutOpt)$@ $(ROOTLIBS) $(GCCLIBS)
 
 # Useful build targets
 include: $(DLIST)
