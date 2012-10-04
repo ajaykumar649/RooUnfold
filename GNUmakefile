@@ -365,13 +365,16 @@ $(CINTFILE) : $(HLIST)
 	@mkdir -p $(WORKDIR)
 	@mkdir -p $(OBJDIR)
 	@echo "Generating dictionary from $(LINKDEF)"
-	$(_)$(ROOTCINT) -f $(CINTFILE) -c -p $(CPPFLAGS) $(INCLUDES) $(HLIST)
+#	$(_)$(ROOTCINT) -f $(CINTFILE) -c -p $(CPPFLAGS) $(INCLUDES) $(HLIST)
+	$(ROOTCINT) -f $(CINTFILE) -c -p $(CPPFLAGS) $(INCLUDES) $(HLIST)
 
 $(ROOTMAP) : $(SHLIBFILE) $(LINKDEF)
 	@echo "Making $@"
 	$(_)echo TObject.h TMemberInspector.h $(HLIST) | tr ' ' '\n' | sed 's/^\(.*\)$$/#include "\1"/' > $(LINKDEFMAP).cxx
-	$(_)$(CXX) -E -C -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
-	$(_)$(RLIBMAP) -o $@ -l $< -d $(ROOTLIBFILES) -c $(LINKDEFMAP).h
+#	$(_)$(CXX) -E -C -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
+#	$(_)$(RLIBMAP) -o $@ -l $< -d $(ROOTLIBFILES) -c $(LINKDEFMAP).h
+	$(CXX) -E -C -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
+	$(RLIBMAP) -o $@ -l $< -d $(ROOTLIBFILES) -c $(LINKDEFMAP).h
 
 # Rule to combine objects into a library
 $(LIBFILE) : $(OLIST) $(CINTOBJ)
