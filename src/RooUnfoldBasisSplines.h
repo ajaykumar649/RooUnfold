@@ -1,0 +1,98 @@
+//=====================================================================-*-C++-*-
+// File and Version Information:
+//      $Id: RooUnfoldBasisSplines.h $
+//
+// Description:
+//      Unfolding class implementing Blobels RUN algorithm
+//      using uniform cubic basis splines
+//
+// Author: Stefan Kluth (skluth@mpp.mpg.de)
+//
+//==============================================================================
+
+#ifndef ROOUNFOLDBASISSPLINES_H_
+#define ROOUNFOLDBASISSPLINES_H_
+
+#include "RooUnfold.h"
+
+class RooUnfoldResponse;
+class TH1;
+class TH1D;
+class TH2D;
+
+#include "TMatrixD.h"
+#include "TMatrixDSym.h"
+#include "TVectorD.h"
+
+class RooUnfoldBasisSplines : public RooUnfold {
+
+public:
+
+  // Ctors:
+  RooUnfoldBasisSplines(); 
+  RooUnfoldBasisSplines( const char* name, const char* title );
+  RooUnfoldBasisSplines( const TString& name, const TString& title );
+  RooUnfoldBasisSplines( const RooUnfoldBasisSplines& );
+  RooUnfoldBasisSplines( const RooUnfoldResponse* res, const TH1* meas, 
+			 const Double_t tau=1.0e-6, const Int_t m0=0,
+			 const Int_t iauto=0,
+			 const char* name=0, const char* title=0 );
+
+  // Dtor:
+  virtual ~RooUnfoldBasisSplines();
+  virtual void Reset();
+
+  // Cloning:
+  virtual RooUnfoldBasisSplines* Clone ( const char* newname= 0 ) const;
+
+  // Assignment:
+  RooUnfoldBasisSplines& operator= ( const RooUnfoldBasisSplines& rhs );
+
+  const TMatrixD* Impl();
+
+  // Basis splines integrated and derivative
+  // for calculation of basis spline matrices
+  TMatrixD makeBasisSplineMatrix( const TVectorD& bins, const TVectorD& cppos );
+  Double_t bfunint( Double_t tmin, Double_t tmax, Double_t tshiftindx=0.0 );
+  Double_t bfunintegrated( Double_t t, Int_t isegment );
+  TMatrixDSym makeCurvatureMatrix( Int_t np );
+  TVectorD makeControlpoints ( const TVectorD& bins, Int_t np );
+  TVectorD transformV( const TVectorD& bins, const TVectorD& cppos );
+  Double_t transform( Double_t t, const TVectorD& vx );
+  Double_t step( const TVectorD& vx );
+  Double_t optTau( const TVectorD& eigenvalues, Double_t m0 );
+  Double_t optTauNoise( const TVectorD& eigenvalues, 
+			const TVectorD& qprime );
+  Int_t findM0noise( const TVectorD& bins, const TVectorD& y, 
+		     const TMatrixDSym& Vinv, 
+		     Int_t npstart, 
+		     Double_t& opttau,
+		     Int_t maxiter=10 );
+
+protected:
+
+  virtual void Unfold();
+  virtual void GetCov();
+  virtual void GetSettings();
+
+private:
+
+  // Helpers:
+  void Init();
+  void SubtractFakes();
+
+  // Instance variables:
+  TMatrixD _resm;
+  Double_t _tau;
+  Int_t _m0;
+  Int_t _iauto;
+
+public:
+  ClassDef( RooUnfoldBasisSplines, 1 )
+
+};
+
+
+#endif
+
+
