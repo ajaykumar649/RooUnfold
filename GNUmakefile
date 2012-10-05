@@ -345,7 +345,7 @@ $(OBJDIR)%.$(ObjSuf) : $(EXESRC)%.cxx $(HLIST)
 $(EXEDIR)%$(ExeSuf) : $(OBJDIR)%.$(ObjSuf) $(LINKLIB)
 	@echo "Linking example executable $@"
 #	$(_)$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
-	$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(GCCLIBS)
+	$(LD) $(LDFLAGS) $< $(OutPutOpt)$@ $(LIBS) $(LINKLIBOPT) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) -lRooFit $(GCCLIBS)
 
 %$(ExeSuf) : %.$(ObjSuf) $(LINKLIB)
 	@echo "Linking user executable $@"
@@ -373,7 +373,8 @@ $(ROOTMAP) : $(SHLIBFILE) $(LINKDEF)
 	$(_)echo TObject.h TMemberInspector.h $(HLIST) | tr ' ' '\n' | sed 's/^\(.*\)$$/#include "\1"/' > $(LINKDEFMAP).cxx
 #	$(_)$(CXX) -E -C -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
 #	$(_)$(RLIBMAP) -o $@ -l $< -d $(ROOTLIBFILES) -c $(LINKDEFMAP).h
-	$(CXX) -E -C -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
+#	$(CXX) -E -C -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
+	$(CXX) -E -D__MAKECINT__ -D__CINT__ -o $(LINKDEFMAP).h $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(LINKDEFMAP).cxx
 	$(RLIBMAP) -o $@ -l $< -d $(ROOTLIBFILES) -c $(LINKDEFMAP).h
 
 # Rule to combine objects into a library
