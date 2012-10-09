@@ -32,7 +32,7 @@ public:
 };
 
 // Declare test suite name and fixture class to BOOST:
-BOOST_FIXTURE_TEST_SUITE( roounfoldsuite, RooUnfoldTestFixture )
+//BOOST_FIXTURE_TEST_SUITE( roounfoldsuite, RooUnfoldTestFixture )
 
 // Test cases:
 
