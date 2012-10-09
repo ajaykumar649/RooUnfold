@@ -221,7 +221,7 @@ CXX          += $(EXTRAINCLUDES)
 LDFLAGS      += $(EXTRALDFLAGS)
 
 ifdef HEPROOT
-CPPFLAGS += -I $(HEPROOT)/include/boost-1_48/
+CXXFLAGS += -I $(HEPROOT)/include/boost-1_48/
 LDFLAGS += -L $(HEPROOT)/lib64
 LDLIBS = -lboost_unit_test_framework-gcc46-mt-1_48
 else
