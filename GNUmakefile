@@ -417,7 +417,7 @@ shlib: $(SHLIBFILE) $(ROOTMAP)
 bin: shlib $(MAINEXE)
 
 commands :
-	@echo "Make $(DEPDIR)%.d:	$(CXX) $(MFLAGS) $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(SRCDIR)%.cxx | sed 's,\(%\.$(ObjSuf)\) *:,$(OBJDIR)\1 $(DEPDIR)%.d :,g' > $(DEPDIR)%.d"
+	@echo "Make $(DEPDIR)%.d:	$(CXX) $(MFLAGS) $(CPPFLAGS) $(INCLUDES) $(ROOTINCLUDES) $(SCDIR)%.cxx | sed 's,\(%\.$(ObjSuf)\) *:,$(OBJDIR)\1 $(DEPDIR)%.d :,g' > $(DEPDIR)%.d"
 	@echo
 	@echo "Make dictionary: $(ROOTCINT) -f $(CINTFILE) -c -p $(INCLUDES) $(HLIST)"
 	@echo
@@ -456,8 +456,8 @@ html : $(HTMLDOC)/index.html
 test : $(TESTEXE)
 
 $(TESTEXE): %: %.o $(LIB)
-	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS)
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH): $@ --log_level=message
+	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) -L. -lRooUnfold
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):. $@ --log_level=message
 
 .PHONY : include shlib lib bin default clean cleanbin html help
 
