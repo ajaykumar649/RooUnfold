@@ -440,6 +440,9 @@ cleanbin :
 	rm -f $(addprefix $(OBJDIR),$(patsubst %.cxx,%.$(ObjSuf),$(MAIN)))
 	rm -f $(MAINEXE)
 
+cleantest :
+	rm -f $(TESTEXE)
+
 $(HTMLDOC)/index.html : $(SHLIBFILE)
 	@echo "Making HTML documentation in $(HTMLDOC)"
 	@( echo 'gSystem->Load("lib$(LIBNAME)");'; \
@@ -455,9 +458,9 @@ html : $(HTMLDOC)/index.html
 
 test : $(TESTEXE)
 
-$(TESTEXE): %: %.o $(LIB)
-	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) -L. -lRooUnfold
-	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):. $@ --log_level=message
+$(TESTEXE): %: %.o $(SHLIBFILE)
+	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(SHLIBFILE)
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH): $@ --log_level=message
 
 .PHONY : include shlib lib bin default clean cleanbin html help
 
