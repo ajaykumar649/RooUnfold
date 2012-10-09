@@ -455,7 +455,7 @@ html : $(HTMLDOC)/index.html
 
 test : $(TESTEXE)
 
-$(TESTEXE): $(TESTFILE:.cc=.o) $(LIB)
+$(TESTEXE): %: %.o $(LIB)
 	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH): $@ --log_level=message
 
