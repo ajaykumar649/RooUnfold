@@ -32,9 +32,15 @@ public:
 };
 
 // Declare test suite name and fixture class to BOOST:
-//BOOST_FIXTURE_TEST_SUITE( roounfoldsuite, RooUnfoldTestFixture )
+BOOST_FIXTURE_TEST_SUITE( roounfoldsuite, RooUnfoldTestFixture )
 
 // Test cases:
+
+// Dummy Test
+BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
+  BOOST_CHECK_EQUAL( 0, 0 );
+}
+
 
 // Test error state after parsing:
 // BOOST_AUTO_TEST_CASE( testParse ) {
@@ -138,5 +144,5 @@ public:
 //   BOOST_CHECK_EQUAL( value, complex<double>() );
 // }
 
-// BOOST_AUTO_TEST_SUITE_END()
+BOOST_AUTO_TEST_SUITE_END()
 
