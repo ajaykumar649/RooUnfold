@@ -364,7 +364,7 @@ $(EXEDIR)%$(ExeSuf) : $(OBJDIR)%.$(ObjSuf) $(LINKLIB)
 
 # === Explicit rules ===========================================================
 
-default : shlib #test
+default : shlib test
 
 help        :
 	@echo "Usage: $(MAKE) [TARGET] [ROOTBUILD=debug] [VERBOSE=1] [NOROOFIT=1] [SHARED=1]"
@@ -462,7 +462,7 @@ $(TESTEXE): %: %.o $(SHLIBFILE)
 	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(SHLIBFILE)
 	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH): $@ --log_level=message
 
-.PHONY : include shlib lib bin default clean cleanbin html help
+.PHONY : include shlib lib bin default clean cleanbin cleantest html help
 
 ifneq ($(GOALS),)
 ifneq ($(DLIST),)
