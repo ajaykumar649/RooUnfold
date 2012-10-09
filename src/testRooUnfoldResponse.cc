@@ -1,4 +1,4 @@
-// Unit tests for INI file reader class
+// Unit tests for RooUnfoldResponse class
 // A. Vanhoefer, E. Schlieckau, 10/2012
 
 #include "RooUnfoldResponse.h"
@@ -10,7 +10,6 @@
 
 // Namespaces:
 using std::string;
-using namespace RooUnfoldResponse;
 
 // Test fixture for all tests:
 class RooUnfoldResponseFixture{
@@ -26,7 +25,7 @@ public:
 
 
 // Declare test suite name and fixture class to BOOST:
-BOOST_FIXTURE_TEST_SUITE( inireadersuite, INIReaderTestFixture )
+BOOST_FIXTURE_TEST_SUITE( RooUnfoldResponseSuite, RooUnfoldResponseFixture )
 
 // Test cases:
 
