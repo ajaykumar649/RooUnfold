@@ -10,6 +10,7 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE RooUnfoldResponseTests
 #include <boost/test/unit_test.hpp>
+#include <boost/test/floating_point_comparison.hpp>
 
 // Namespaces:
 using std::string;
@@ -154,19 +155,20 @@ BOOST_AUTO_TEST_CASE(testFill1D){
   //test with default weight
   double xMeasured = 42;
   double xTruth = 74;
+  double  weight =7.3;
 
-  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth);
+  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth,weight);
   //test if measured histogram was filled right
   TH1* measuredHistogram = responseSameBinsMeasuredTruth.Hmeasured();
 
   int entriesMeasured = measuredHistogram->GetEntries();
   BOOST_CHECK_MESSAGE(entriesMeasured==1,"Wrong number of total entries for the measured histogram. Expected 1, but was: "<<entriesMeasured);
   double entriesWeightedMeasured = measuredHistogram->Integral();
-  BOOST_CHECK_MESSAGE(entriesWeightedMeasured==1,"Wrong number of weighted entries for the measured histogram. Expected 1, but was: "<<entriesWeightedMeasured);
+  BOOST_CHECK_MESSAGE(entriesWeightedMeasured==weight,"Wrong number of weighted entries for the measured histogram. Expected "<< weight <<", but was: "<<entriesWeightedMeasured);
 
   int binMeasured = measuredHistogram->FindBin(xMeasured);
   double binContentMeasured =measuredHistogram->GetBinContent(binMeasured);
-  BOOST_CHECK_MESSAGE(binContentMeasured==1,"Wrong bin was filled for the measured histogram, expected, bin 4 to be filled, but filled bin: "<<binMeasured);
+  BOOST_CHECK_MESSAGE(binContentMeasured==weight,"Wrong bin was filled for the measured histogram, expected, bin 4 to be filled, but filled bin: "<<binMeasured);
 
  //test if truth histogram was filled right
   TH1* truthHistogram = responseSameBinsMeasuredTruth.Htruth();
@@ -174,11 +176,11 @@ BOOST_AUTO_TEST_CASE(testFill1D){
   int entriesTruth = truthHistogram->GetEntries();
   BOOST_CHECK_MESSAGE(entriesTruth==1,"Wrong number of total entries for the truth histogram. Expected 1, but was: "<<entriesTruth);
   double entriesWeightedTruth = truthHistogram->Integral();
-  BOOST_CHECK_MESSAGE(entriesWeightedTruth==1,"Wrong number of weighted entries for the truth histogram. Expected 1, but was: "<<entriesWeightedTruth);
+  BOOST_CHECK_MESSAGE(entriesWeightedTruth==weight,"Wrong number of weighted entries for the truth histogram. Expected  "<< weight <<", but was: "<<entriesWeightedTruth);
 
   int binTruth = truthHistogram->FindBin(xTruth);
   double binContentTruth =truthHistogram->GetBinContent(binTruth);
-  BOOST_CHECK_MESSAGE(binContentTruth==1,"Wrong bin was filled for the truth histogram, expected, bin 4 to be filled, but filled bin: "<<binTruth);
+  BOOST_CHECK_MESSAGE(binContentTruth==weight,"Wrong bin was filled for the truth histogram, expected, bin 7 to be filled, but filled bin: "<<binTruth);
 
    //test if response histogram was filled right
   TH2* responseHistogram = responseSameBinsMeasuredTruth.Hresponse();
@@ -186,11 +188,19 @@ BOOST_AUTO_TEST_CASE(testFill1D){
   int entriesResponse = responseHistogram->GetEntries();
   BOOST_CHECK_MESSAGE(entriesResponse==1,"Wrong number of total entries for the truth histogram. Expected 1, but was: "<<entriesResponse);
   double entriesWeightedResponse = truthHistogram->Integral();
-  BOOST_CHECK_MESSAGE(entriesWeightedResponse==1,"Wrong number of weighted entries for the truth histogram. Expected 1, but was: "<<entriesWeightedResponse);
+  BOOST_CHECK_MESSAGE(entriesWeightedResponse==weight,"Wrong number of weighted entries for the truth histogram. Expected  "<< weight <<", but was: "<<entriesWeightedResponse);
 
   int binResponse = responseHistogram->FindBin(xMeasured,xTruth);
   double binContentResponse =responseHistogram->GetBinContent(binResponse);
-  BOOST_CHECK_MESSAGE(binContentResponse==1,"Wrong bin was filled for the truth histogram, expected, bin 4 to be filled, but filled bin: "<<binResponse);
+  BOOST_CHECK_MESSAGE(binContentResponse==weight,"Wrong bin was filled for the truth histogram, expected, bin 101 to be filled, but filled bin: "<<binResponse);
+
+  //test default value for weight for filling
+  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth);
+
+  int entries = truthHistogram->GetEntries();
+  BOOST_CHECK_MESSAGE(entries==2,"Wrong number of total entries. Expected 2, but was: "<<entries);
+  double resultDefaultWeight = truthHistogram->Integral()-weight;
+  BOOST_CHECK_CLOSE( 1, resultDefaultWeight, 0.0001 );
 }
 
 //Test of UseOverflowStatus
