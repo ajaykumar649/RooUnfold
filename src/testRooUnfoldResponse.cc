@@ -65,15 +65,36 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   double low = 0;
   double high = 3;
   RooUnfoldResponse responseWithNumberOfBins(numberOfBins, low, high);
-  responseWithNumberOfBins.Miss(1.5);
   const TH1* measured = responseWithNumberOfBins.Hmeasured();
   const TH1* fakes = responseWithNumberOfBins.Hfakes();
   const TH1* truth = responseWithNumberOfBins.Htruth();
   const TH2* response = responseWithNumberOfBins.Hresponse();
+  responseWithNumberOfBins.Miss(1.5);
+  BOOST_CHECK_MESSAGE(0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
   BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
+  responseWithNumberOfBins.Miss(0.5);
+  BOOST_CHECK_MESSAGE(0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 0");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,1) << " != 0");
+  responseWithNumberOfBins.Miss(1.5);
+  BOOST_CHECK_MESSAGE(0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(2 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 2");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 0");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,1) << " != 0");
   }
 
 BOOST_AUTO_TEST_CASE(testFill1D){
