@@ -1,6 +1,8 @@
 
-// Unit tests for RooUnfold
+// Unit tests for RooUnfoldBasisSplines
 //
+
+#include "RooUnfoldBasisSplines.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -10,35 +12,50 @@
 
 // BOOST test stuff:
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE roounfoldtest
+#define BOOST_TEST_MODULE roounfoldbasissplinestest
 #include <boost/test/unit_test.hpp>
 
 // Namespaces:
 using std::string;
 using std::vector;
 using std::complex;
-//using namespace INIParser;
 
 // Test fixture for all tests:
-class RooUnfoldTestFixture {
+class RooUnfoldBasisSplinesTestFixture {
 public:
-  RooUnfoldTestFixture(){
-    BOOST_MESSAGE( "Create RooUnfoldTestFixture" );
+  RooUnfoldBasisSplinesTestFixture(){
+    BOOST_MESSAGE( "Create RooUnfoldBasisSplinesTestFixture" );
   }
-  virtual ~RooUnfoldTestFixture() {
-    BOOST_MESSAGE( "Tear down RooUnfoldTestFixture" );
+  virtual ~RooUnfoldBasisSplinesTestFixture() {
+    BOOST_MESSAGE( "Tear down RooUnfoldBasisSplinesTestFixture" );
   }
-  //  RooUnfold reader;
+  // useful objects good for all the tests ????
 };
 
 // Declare test suite name and fixture class to BOOST:
-BOOST_FIXTURE_TEST_SUITE( roounfoldsuite, RooUnfoldTestFixture )
+BOOST_FIXTURE_TEST_SUITE( roounfoldbasissplinessuite, RooUnfoldBasisSplinesTestFixture )
 
 // Test cases:
 
 // Dummy Test
-BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
+BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesDummyTest ) {
   BOOST_CHECK_EQUAL( 0, 0 );
+}
+
+BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesEmptyConstructor ){
+  RooUnfoldBasisSplines emptyConstr;
+  BOOST_CHECK_EQUAL( emptyConstr.GetMinParm(), 0 );
+  BOOST_CHECK_EQUAL( emptyConstr.GetMaxParm(), 0 );
+  BOOST_CHECK_EQUAL( emptyConstr.GetStepSizeParm(), 0 );
+  BOOST_CHECK_EQUAL( emptyConstr.GetDefaultParm(), 0 );
+}
+
+BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesConstCharConstr ){
+  const char* name = "ciccio";
+  const char* title = "panza";
+  RooUnfoldBasisSplines charConstr(name, title);
+  BOOST_CHECK_EQUAL( charConstr.GetName() , name );
+  BOOST_CHECK_EQUAL( charConstr.GetTitle() , title );
 }
 
 
