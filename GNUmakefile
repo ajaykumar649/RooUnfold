@@ -193,7 +193,7 @@ endif
 
 MAIN          = $(filter-out $(EXCLUDE),$(notdir $(wildcard $(EXESRC)*.cxx)))
 MAINEXE       = $(addprefix $(EXEDIR),$(patsubst %.cxx,%$(ExeSuf),$(MAIN)))
-TESTFILE      = $(SRCDIR)testRooUnfoldBasisSplines.cc $(SRCDIR)testRooUnfoldParms.cc $(SRCDIR)testRooUnfold.cc $(SRCDIR)testRooUnfoldResponse.cc
+TESTFILE      = $(SRCDIR)testRooUnfoldResponse.cc $(SRCDIR)testRooUnfold.cc $(SRCDIR)testRooUnfoldBasisSplines.cc $(SRCDIR)testRooUnfoldParms.cc 
 TESTEXE       = $(basename $(TESTFILE) )
 LINKDEF       = $(INCDIR)$(PACKAGE)_LinkDef.h
 LINKDEFMAP    = $(WORKDIR)$(PACKAGE)Map_LinkDef
