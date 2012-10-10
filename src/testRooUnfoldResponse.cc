@@ -4,6 +4,7 @@
 #include "RooUnfoldResponse.h"
 
 #include "TH2.h"
+#include "TH2D.h"
 #include "TH1.h"
 
 // BOOST test stuff:
