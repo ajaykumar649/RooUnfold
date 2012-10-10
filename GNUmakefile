@@ -193,6 +193,8 @@ endif
 
 MAIN          = $(filter-out $(EXCLUDE),$(notdir $(wildcard $(EXESRC)*.cxx)))
 MAINEXE       = $(addprefix $(EXEDIR),$(patsubst %.cxx,%$(ExeSuf),$(MAIN)))
+TESTFILE      = $(SRCDIR)testRooUnfold.cc $(SRCDIR)testRooUnfoldResponse.cc
+TESTEXE       = $(basename $(TESTFILE) )
 LINKDEF       = $(INCDIR)$(PACKAGE)_LinkDef.h
 LINKDEFMAP    = $(WORKDIR)$(PACKAGE)Map_LinkDef
 HLIST         = $(filter-out $(addprefix $(INCDIR),$(EXCLUDE)) $(LINKDEF),$(wildcard $(INCDIR)*.h)) $(LINKDEF)
@@ -217,6 +219,14 @@ endif
 INCLUDES      = -I$(INCDIR)
 CXX          += $(EXTRAINCLUDES)
 LDFLAGS      += $(EXTRALDFLAGS)
+
+ifdef HEPROOT
+CXXFLAGS += -I $(HEPROOT)/include/boost-1_48/
+LDFLAGS += -L $(HEPROOT)/lib64
+LDLIBS = -lboost_unit_test_framework-gcc46-mt-1_48
+else
+LDLIBS = -lboost_unit_test_framework
+endif
 
 ifneq ($(SHARED),)
 LIBS          = -L$(SHLIBDIR)
@@ -354,7 +364,7 @@ $(EXEDIR)%$(ExeSuf) : $(OBJDIR)%.$(ObjSuf) $(LINKLIB)
 
 # === Explicit rules ===========================================================
 
-default : shlib
+default : shlib test
 
 help        :
 	@echo "Usage: $(MAKE) [TARGET] [ROOTBUILD=debug] [VERBOSE=1] [NOROOFIT=1] [SHARED=1]"
@@ -424,10 +434,14 @@ clean : cleanbin
 	rm -f $(LIBFILE)
 	rm -f $(SHLIBFILE) $(ROOTMAP) $(LINKDEFMAP).cxx $(LINKDEFMAP).h
 	rm -f $(STATICLIBFILE)
+	rm -f $(TESTEXE)
 
 cleanbin :
 	rm -f $(addprefix $(OBJDIR),$(patsubst %.cxx,%.$(ObjSuf),$(MAIN)))
 	rm -f $(MAINEXE)
+
+cleantest :
+	rm -f $(TESTEXE)
 
 $(HTMLDOC)/index.html : $(SHLIBFILE)
 	@echo "Making HTML documentation in $(HTMLDOC)"
@@ -442,7 +456,13 @@ $(HTMLDOC)/index.html : $(SHLIBFILE)
 
 html : $(HTMLDOC)/index.html
 
-.PHONY : include shlib lib bin default clean cleanbin html help
+test : $(TESTEXE)
+
+$(TESTEXE): %: %.o $(SHLIBFILE)
+	$(LD) -o $@ $^ $(LDFLAGS) $(LDLIBS) $(ROOTLIBS) $(if $(findstring $<,$(ROOFITCLIENTS)),$(ROOFITLIBS)) $(SHLIBFILE)
+	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH): $@ --log_level=message
+
+.PHONY : include shlib lib bin default clean cleanbin cleantest html help
 
 ifneq ($(GOALS),)
 ifneq ($(DLIST),)
