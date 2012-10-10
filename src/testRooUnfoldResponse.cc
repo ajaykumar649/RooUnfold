@@ -16,28 +16,23 @@
 using std::string;
 
 
-//==============================================================================
-// Global definitions
-//==============================================================================
-
-const Double_t cutdummy= -99999.0;
-
 // Test fixture for all tests:
 class RooUnfoldResponseFixture{
 public:
+  Double_t const returnCutDummy() {return cutdummy_;}
   RooUnfoldResponseFixture():
     responseSameBinsMeasuredTruth(10,0.,100.)
   {
     BOOST_MESSAGE( "Create RooUnfoldResponseFixture" );
     //Initialize RooUnfoldResponse instance with same entries for testing;
     responseFilledWithSomeEntries=RooUnfoldResponse(40, -10.0, 10.0);
-    TRandom FixedSeedRandom(111);
+    FixedSeedRandom =TRandom(111);
     // Train with a Breit-Wigner, mean 0.3 and width 2.5.
-    for (Int_t i=0; i<10000; i++) {
+    for (Int_t i=0; i<10; i++) {
       double xt = FixedSeedRandom.BreitWigner(0.3, 2.5);
       double x = xt + smear(xt); //introduce
-						       //bias and smear
-    if (x!=cutdummy)
+                                 //bias and smear
+      if (x!=returnCutDummy())
       responseFilledWithSomeEntries.Fill (x, xt);
     else
       responseFilledWithSomeEntries.Miss (xt);
@@ -49,14 +44,17 @@ public:
   RooUnfoldResponse response;
   RooUnfoldResponse responseSameBinsMeasuredTruth;
   RooUnfoldResponse responseFilledWithSomeEntries;
+  
 
 private:
+  TRandom FixedSeedRandom;
+  static const Double_t cutdummy_= -99999.0;
   Double_t smear (Double_t xt)
   {
     Double_t xeff= 0.3 + (1.0-0.3)/20*(xt+10.0);  // efficiency
-    Double_t x= gRandom->Rndm();
-    if (x>xeff) return cutdummy;
-    Double_t xsmear= gRandom->Gaus(-2.5,0.2);     // bias and smear
+    Double_t x= FixedSeedRandom.Rndm();
+    if (x>xeff) return cutdummy_;
+    Double_t xsmear= FixedSeedRandom.Gaus(-2.5,0.2);     // bias and smear
     return xt+xsmear;
   }
   
@@ -228,10 +226,8 @@ BOOST_AUTO_TEST_CASE(testUseOverflowStatus){
 BOOST_AUTO_TEST_CASE(testAddFunction){
   RooUnfoldResponse testObject = responseFilledWithSomeEntries;
   int noOfEntriesInMeasuredHist = testObject.Hmeasured()->GetEntries(); 
-  //  std::cout << testObject.Hmeasured()->GetEntries() << std::endl;
   testObject.Add(responseFilledWithSomeEntries);
   BOOST_CHECK_MESSAGE(testObject.Hmeasured()->GetEntries()==2*noOfEntriesInMeasuredHist,"Adding the same RooUnfoldResponse did not result in twice the number of entries in Hmeasured");
-  //  std::cout << testObject.Hmeasured()->GetEntries() << std::endl;
 
   //should be extended :)
 }
