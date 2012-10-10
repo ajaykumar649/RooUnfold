@@ -10,6 +10,7 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE RooUnfoldResponseTests
 #include <boost/test/unit_test.hpp>
+#include <boost/test/floating_point_comparison.hpp>
 
 // Namespaces:
 using std::string;
@@ -24,7 +25,8 @@ const Double_t cutdummy= -99999.0;
 // Test fixture for all tests:
 class RooUnfoldResponseFixture{
 public:
-  RooUnfoldResponseFixture()
+  RooUnfoldResponseFixture():
+    responseSameBinsMeasuredTruth(10,0.,100.)
   {
     BOOST_MESSAGE( "Create RooUnfoldResponseFixture" );
     //Initialize RooUnfoldResponse instance with same entries for testing;
@@ -40,7 +42,6 @@ public:
     else
       responseFilledWithSomeEntries.Miss (xt);
     }
-    responseSameBinsMeasuredTruth = RooUnfoldResponse(10,0.,100.);
   }
   virtual ~RooUnfoldResponseFixture(){
     BOOST_MESSAGE( "Tear down RooUnfoldResponseFixture" );
@@ -89,8 +90,15 @@ BOOST_AUTO_TEST_CASE(testConstructorNumberOfBins){
   BOOST_CHECK_MESSAGE(resultNumberOfBinsMeasured == resultNumberOfBinsTruth, "Number of bins truth not equal to number of bins measured: " << resultNumberOfBinsTruth << " != " << resultNumberOfBinsMeasured);
   BOOST_CHECK_MESSAGE(low == responseHistogramLow, "First bin low edge not taken correctly: " << responseHistogramLow << " != " << low);
   BOOST_CHECK_MESSAGE(high == responseHistogramHigh, "Last bin high edge not taken correctly: " << responseHistogramHigh << " != " << high);
-}
+  int measuredDimensions = responseWithNumberOfBins.GetDimensionMeasured();
+  int truthDimensions = responseWithNumberOfBins.GetDimensionTruth();
+  BOOST_CHECK_MESSAGE(measuredDimensions == 1, "Wrong measured dimension, has to be 1 but is: " << measuredDimensions);
+  BOOST_CHECK_MESSAGE(truthDimensions == 1, "Wrong truth dimension, has to be 1 but is: " << truthDimensions);
 
+  TH1* measuredHistogram = responseWithNumberOfBins.Hmeasured();
+  int entriesMeasured = measuredHistogram->GetEntries();
+  BOOST_CHECK_MESSAGE(entriesMeasured==0,"Wrong number of total entries for the measured histogram. Expected 0, but was: "<<entriesMeasured);
+}
 
 BOOST_AUTO_TEST_CASE(testmethodMiss){
   int numberOfBins = 3;
@@ -102,30 +110,43 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   const TH1* fakes = responseWithNumberOfBins.Hfakes();
   const TH1* truth = responseWithNumberOfBins.Htruth();
   const TH2* response = responseWithNumberOfBins.Hresponse();
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
-  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
-  responseWithNumberOfBins.Miss(0.5);
-  BOOST_CHECK_MESSAGE(0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
-  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 0");
-  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,1) << " != 0");
+  const TH2D* responsenooverflow = responseWithNumberOfBins.HresponseNoOverflow();
+  BOOST_CHECK_MESSAGE(1 == responseWithNumberOfBins.GetDimensionMeasured() , "Dimension measured is wrong : " << responseWithNumberOfBins.GetDimensionMeasured() << " != 1");
+  BOOST_CHECK_MESSAGE(1 == responseWithNumberOfBins.GetDimensionTruth() , "Dimension truth is wrong : " << responseWithNumberOfBins.GetDimensionTruth() << " != 1");
   responseWithNumberOfBins.Miss(1.5);
-  BOOST_CHECK_MESSAGE(0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
-  BOOST_CHECK_MESSAGE(2 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 2");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 0");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
+  responseWithNumberOfBins.Miss(0.5);
+  BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,1) << " != 0");
+  responseWithNumberOfBins.Miss(1.5);
+  BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(2 == truth->GetBinContent(2), "Truth histogram not filled with two entries. Number of entries found: " << truth->GetBinContent(2) << " != 2");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "Truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == truth->GetBinContent(3), "Truth histogram is filled. Number of entries found: " << truth->GetBinContent(3) << " != 0");
+  responseWithNumberOfBins.Miss(2.5,5);
+  BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(2 == truth->GetBinContent(2), "Truth histogram not filled with two entries. Number of entries found: " << truth->GetBinContent(2) << " != 2");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "Truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
+  BOOST_CHECK_MESSAGE(5 == truth->GetBinContent(3), "Truth histogram not filled with five entries. Number of entries found: " << truth->GetBinContent(3) << " != 5");
   }
 
 BOOST_AUTO_TEST_CASE(testmethodFake){
@@ -147,15 +168,52 @@ BOOST_AUTO_TEST_CASE(testFill1D){
   //test with default weight
   double xMeasured = 42;
   double xTruth = 74;
-  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth);
+  double  weight =7.3;
+
+  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth,weight);
+  //test if measured histogram was filled right
   TH1* measuredHistogram = responseSameBinsMeasuredTruth.Hmeasured();
+
   int entriesMeasured = measuredHistogram->GetEntries();
-  //int 
-  //BOOST_CHECK_MESSAGE();
+  BOOST_CHECK_MESSAGE(entriesMeasured==1,"Wrong number of total entries for the measured histogram. Expected 1, but was: "<<entriesMeasured);
+  double entriesWeightedMeasured = measuredHistogram->Integral();
+  BOOST_CHECK_MESSAGE(entriesWeightedMeasured==weight,"Wrong number of weighted entries for the measured histogram. Expected "<< weight <<", but was: "<<entriesWeightedMeasured);
 
+  int binMeasured = measuredHistogram->FindBin(xMeasured);
+  double binContentMeasured =measuredHistogram->GetBinContent(binMeasured);
+  BOOST_CHECK_MESSAGE(binContentMeasured==weight,"Wrong bin was filled for the measured histogram, expected, bin 4 to be filled, but filled bin: "<<binMeasured);
 
+ //test if truth histogram was filled right
   TH1* truthHistogram = responseSameBinsMeasuredTruth.Htruth();
+
+  int entriesTruth = truthHistogram->GetEntries();
+  BOOST_CHECK_MESSAGE(entriesTruth==1,"Wrong number of total entries for the truth histogram. Expected 1, but was: "<<entriesTruth);
+  double entriesWeightedTruth = truthHistogram->Integral();
+  BOOST_CHECK_MESSAGE(entriesWeightedTruth==weight,"Wrong number of weighted entries for the truth histogram. Expected  "<< weight <<", but was: "<<entriesWeightedTruth);
+
+  int binTruth = truthHistogram->FindBin(xTruth);
+  double binContentTruth =truthHistogram->GetBinContent(binTruth);
+  BOOST_CHECK_MESSAGE(binContentTruth==weight,"Wrong bin was filled for the truth histogram, expected, bin 7 to be filled, but filled bin: "<<binTruth);
+
+   //test if response histogram was filled right
   TH2* responseHistogram = responseSameBinsMeasuredTruth.Hresponse();
+
+  int entriesResponse = responseHistogram->GetEntries();
+  BOOST_CHECK_MESSAGE(entriesResponse==1,"Wrong number of total entries for the truth histogram. Expected 1, but was: "<<entriesResponse);
+  double entriesWeightedResponse = truthHistogram->Integral();
+  BOOST_CHECK_MESSAGE(entriesWeightedResponse==weight,"Wrong number of weighted entries for the truth histogram. Expected  "<< weight <<", but was: "<<entriesWeightedResponse);
+
+  int binResponse = responseHistogram->FindBin(xMeasured,xTruth);
+  double binContentResponse =responseHistogram->GetBinContent(binResponse);
+  BOOST_CHECK_MESSAGE(binContentResponse==weight,"Wrong bin was filled for the truth histogram, expected, bin 101 to be filled, but filled bin: "<<binResponse);
+
+  //test default value for weight for filling
+  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth);
+
+  int entries = truthHistogram->GetEntries();
+  BOOST_CHECK_MESSAGE(entries==2,"Wrong number of total entries. Expected 2, but was: "<<entries);
+  double resultDefaultWeight = truthHistogram->Integral()-weight;
+  BOOST_CHECK_CLOSE( 1, resultDefaultWeight, 0.0001 );
 }
 
 //Test of UseOverflowStatus

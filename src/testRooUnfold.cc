@@ -116,10 +116,7 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
 }
 
 BOOST_AUTO_TEST_CASE( testConstructor ) {
-  BOOST_MESSAGE( "horst" );
-  RooUnfold* ru = new RooUnfold("r", "u");
-  ru->Print();
-  delete ru;
+  BOOST_MESSAGE( "testConstructor" );
 }
 
 //   string value, expectedValue;
