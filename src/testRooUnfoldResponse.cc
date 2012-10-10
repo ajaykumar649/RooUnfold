@@ -77,7 +77,12 @@ BOOST_AUTO_TEST_CASE(testFill1D){
 
   TH1* truthHistogram = responseSameBinsMeasuredTruth.Htruth();
   TH2* responseHistogram = responseSameBinsMeasuredTruth.Hresponse();
-  
+}
+
+//Test of UseOverflowStatus
+BOOST_AUTO_TEST_CASE(testUseOverflowStatus){
+  //  RooUnfoldResponse testObject;
+  BOOST_CHECK_MESSAGE(response.UseOverflowStatus()==false,"default constructor does not initialize with overflow set to false");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
