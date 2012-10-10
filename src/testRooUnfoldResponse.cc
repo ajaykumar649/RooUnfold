@@ -28,6 +28,7 @@ public:
 
 // Declare test suite name and fixture class to BOOST:
 BOOST_FIXTURE_TEST_SUITE( RooUnfoldResponseSuite, RooUnfoldResponseFixture )
+//BOOST_AUTO_TEST_SUITE( RooUnfoldResponseSuite )
 
 // Test cases:
 
@@ -65,6 +66,12 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   const TH1* fakes = responseWithNumberOfBins->Hfakes();
   BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) " != 0");
   BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) " != 0"); 
+}
+
+//Test of UseOverflowStatus
+BOOST_AUTO_TEST_CASE(testUseOverflowStatus){
+  //  RooUnfoldResponse testObject;
+  BOOST_CHECK_MESSAGE(response.UseOverflowStatus()==false,"default constructor does not initialize with overflow set to false");
 }
 
 BOOST_AUTO_TEST_SUITE_END()
