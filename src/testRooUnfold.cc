@@ -1,4 +1,5 @@
 
+//
 // Unit tests for RooUnfold
 //
 
@@ -7,11 +8,17 @@
 #include <string>
 #include <vector>
 #include <complex>
+#include "TH1.h"
+#include "TRandom.h"
 
 // BOOST test stuff:
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE roounfoldtest
 #include <boost/test/unit_test.hpp>
+
+
+#include "RooUnfoldResponse.h"
+#include "RooUnfold.h"
 
 // Namespaces:
 using std::string;
@@ -19,16 +26,83 @@ using std::vector;
 using std::complex;
 //using namespace INIParser;
 
+const Double_t cutdummy= -99999.0;
+
+Double_t smear (Double_t xt)
+{
+  Double_t xeff= 0.3 + (1.0-0.3)/20*(xt+10.0);  // efficiency
+  Double_t x= gRandom->Rndm();
+  if (x>xeff) return cutdummy;
+  Double_t xsmear= gRandom->Gaus(-2.5,0.2);     // bias and smear
+  return xt+xsmear;
+}
+
+
 // Test fixture for all tests:
 class RooUnfoldTestFixture {
 public:
   RooUnfoldTestFixture(){
+    BOOST_MESSAGE( "----------------------------" );
     BOOST_MESSAGE( "Create RooUnfoldTestFixture" );
+
+
+
+    TH1::SetDefaultSumw2( false );
+
+  // Turn on error calculation from sums of weights
+  // Upsets RooUnfold::PrintTable
+  // TH1::SetDefaultSumw2();
+  TH1::SetDefaultSumw2( false );
+
+
+  std::cout << "==================================== TRAIN ====================================" << std::endl;
+  //  RooUnfoldResponse response (40, -10.0, 10.0);
+  RooUnfoldResponse response (40, -10.0, 10.0, 20, -10.0, 10.0 );
+
+  // Train with a Breit-Wigner, mean 0.3 and width 2.5.
+  for (Int_t i= 0; i<100000; i++) {
+    Double_t xt= gRandom->BreitWigner (0.3, 2.5);
+    Double_t x= smear (xt);
+
+      response.Fill (x, xt);
+
+  }
+
+  std::cout << "==================================== TEST =====================================" << std::endl;
+  // TH1D* hTrue= new TH1D ("true", "Test Truth",    40, -10.0, 10.0);
+  TH1D* hTrue= new TH1D( "true", "Test Truth", 20, -10.0, 10.0 );
+
+  TH1D* hMeas= new TH1D ("meas", "Test Measured", 40, -10.0, 10.0);
+  // Test with a Gaussian, mean 0 and width 2.
+  for (Int_t i=0; i<10000; i++) {
+    Double_t xt= gRandom->Gaus (0.0, 2.0), x= smear (xt);
+    hTrue->Fill(xt);
+    if (x!=cutdummy) hMeas->Fill(x);
+  }
+
+  std::cout << "==================================== UNFOLD ===================================" << std::endl;
+  // RooUnfoldBayes   unfold (&response, hMeas, 4);    // OR
+  RooUnfold* unfold= new RooUnfold( &response, hMeas);    // OR
+//RooUnfoldSvd     unfold (&response, hMeas, 20);   // OR
+//RooUnfoldTUnfold unfold (&response, hMeas);
+
+  TH1D* hReco= (TH1D*) unfold->Hreco();
+
+  unfold->Print();
+  //  unfold->PrintTable (cout, hTrue);
+  //  hReco->Draw();
+  //  hMeas->Draw("SAME");
+  //  hTrue->SetLineColor(8);
+  //  hTrue->Draw("SAME");
+
+
   }
   virtual ~RooUnfoldTestFixture() {
     BOOST_MESSAGE( "Tear down RooUnfoldTestFixture" );
+    BOOST_MESSAGE( "----------------------------" );
   }
   //  RooUnfold reader;
+  //roounford pointer 
 };
 
 // Declare test suite name and fixture class to BOOST:
@@ -41,6 +115,15 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
   BOOST_CHECK_EQUAL( 0, 0 );
 }
 
+BOOST_AUTO_TEST_CASE( testConstructor ) {
+  BOOST_MESSAGE( "testConstructor" );
+}
+
+//   string value, expectedValue;
+//   value= reader.get( "user", "multiline", "" );
+//   expectedValue= "this is\na\nmultiline";
+//   BOOST_CHECK_EQUAL( value, expectedValue );
+// }
 
 // Test error state after parsing:
 // BOOST_AUTO_TEST_CASE( testParse ) {
