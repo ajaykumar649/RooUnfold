@@ -1,6 +1,5 @@
 
 // Unit tests for RooUnfoldBasisSplines
-//
 
 #include "RooUnfoldBasisSplines.h"
 
@@ -29,7 +28,6 @@ public:
   virtual ~RooUnfoldBasisSplinesTestFixture() {
     BOOST_MESSAGE( "Tear down RooUnfoldBasisSplinesTestFixture" );
   }
-  // useful objects good for all the tests ????
 };
 
 // Declare test suite name and fixture class to BOOST:
@@ -42,6 +40,7 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesDummyTest ) {
   BOOST_CHECK_EQUAL( 0, 0 );
 }
 
+//test of the empty constructor
 BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesEmptyConstructor ){
   RooUnfoldBasisSplines emptyConstr;
   BOOST_CHECK_EQUAL( emptyConstr.GetMinParm(), 0 );
@@ -50,6 +49,7 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesEmptyConstructor ){
   BOOST_CHECK_EQUAL( emptyConstr.GetDefaultParm(), 0 );
 }
 
+//test of the named constructor
 BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesConstCharConstr ){
   const char* name = "ciccio";
   const char* title = "panza";
@@ -58,108 +58,31 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldBasisSplinesConstCharConstr ){
   BOOST_CHECK_EQUAL( charConstr.GetTitle() , title );
 }
 
+//test of the named constructor with strigs
+BOOST_AUTO_TEST_CASE( testRootUnfoldSplinestStringConstr ){
+  TString name = "frengo";
+  TString title = "sticastica";
+  RooUnfoldBasisSplines strConstr(name, title);
+  BOOST_CHECK_EQUAL( strConstr.GetName(), name );
+  BOOST_CHECK_EQUAL( strConstr.GetTitle(), title );
+}
 
-// Test error state after parsing:
-// BOOST_AUTO_TEST_CASE( testParse ) {
-//   BOOST_CHECK_EQUAL( reader.parseError(), 0 );
-// }
-
-// Test get string:
-// BOOST_AUTO_TEST_CASE( testGetString ) {
-//   string value, expectedValue;
-//   value= reader.get( "user", "name", "" );
-//   expectedValue= "Bob Smith";
-//   BOOST_CHECK_EQUAL( value, expectedValue );
-//   expectedValue= "default";
-//   value= reader.get( "user", "???", "default" );
-//   BOOST_CHECK_EQUAL( value, expectedValue );
-//   value= reader.get( "???", "name", "default" );
-//   BOOST_CHECK_EQUAL( value, expectedValue );
-// }
-
-// Test get multi-line string:
-// BOOST_AUTO_TEST_CASE( testGetMultilineString ) {
-//   string value, expectedValue;
-//   value= reader.get( "user", "multiline", "" );
-//   expectedValue= "this is\na\nmultiline";
-//   BOOST_CHECK_EQUAL( value, expectedValue );
-// }
-
-// Test tokens from string:
-// BOOST_AUTO_TEST_CASE( testGetStringTokens ) {
-//   string values= reader.get( "user", "multiline", "" );
-//   vector<string> tokens= getTokens( values );
-//   vector<string> expected;
-//   expected.push_back( "this" );
-//   expected.push_back( "is" );
-//   expected.push_back( "a" );
-//   expected.push_back( "multiline" );
-//   for( size_t i= 0; i < expected.size(); i++ ) {
-//     BOOST_CHECK_EQUAL( tokens[i], expected[i] );
-//   }
-// }
-
-// Test get all names sorted in a section:
-// BOOST_AUTO_TEST_CASE( testGetNames ) {
-//   vector<string> names= reader.getNames( "protocol" );
-//   vector<string> expected;
-//   expected.push_back( "complex" );
-//   expected.push_back( "number" );
-//   expected.push_back( "version" );
-//   for( size_t i= 0; i < expected.size(); i++ ) {
-//     BOOST_CHECK_EQUAL( expected[i], names[i] );
-//   }
-// }
-
-// Test bools:
-// BOOST_AUTO_TEST_CASE( testGetBools ) {
-//   bool value;
-//   value= reader.getType( "user", "activetrue", false );
-//   BOOST_CHECK_EQUAL( value, true );
-//   value= reader.getType( "user", "activeyes", false );
-//   BOOST_CHECK_EQUAL( value, true );
-//   value= reader.getType( "user", "activeon", false );
-//   BOOST_CHECK_EQUAL( value, true );
-//   value= reader.getType( "user", "active1", false );
-//   BOOST_CHECK_EQUAL( value, true );
-//   value= reader.getType( "user", "activefalse", true );
-//   BOOST_CHECK_EQUAL( value, false );
-//   value= reader.getType( "user", "activeno", true );
-//   BOOST_CHECK_EQUAL( value, false );
-//   value= reader.getType( "user", "activeoff", true );
-//   BOOST_CHECK_EQUAL( value, false );
-//   value= reader.getType( "user", "active0", true );
-//   BOOST_CHECK_EQUAL( value, false );
-//   value= reader.getType( "user", "???", true );
-//   BOOST_CHECK_EQUAL( value, true );
-// }
-
-// Test long:
-// BOOST_AUTO_TEST_CASE( testGetInteger ) {
-//   int value;
-//   value= reader.getType( "protocol", "version", 0 );
-//   BOOST_CHECK_EQUAL( value, 6 );
-//   value= reader.getType( "protocol", "???", 0 );
-//   BOOST_CHECK_EQUAL( value, 0 );
-// }
-
-// // Test double:
-// BOOST_AUTO_TEST_CASE( testGetDouble ) {
-//   double value;
-//   value= reader.getType( "protocol", "number", 0.0 );
-//   BOOST_CHECK_EQUAL( value, 1.2345e9 );
-//   value= reader.getType( "protocol", "???", 0.0 );
-//   BOOST_CHECK_EQUAL( value, 0.0 );
-// }
-
-// Test complex:
-// BOOST_AUTO_TEST_CASE( testGetComplex ) {
-//   complex<double> value;
-//   value= reader.getType( "protocol", "complex", complex<double>() );
-//   BOOST_CHECK_EQUAL( value, complex<double>(1.0,1.0) );
-//   value= reader.getType( "protocol", "???", complex<double>() );
-//   BOOST_CHECK_EQUAL( value, complex<double>() );
-// }
+//test of the named constructor with a constructor
+BOOST_AUTO_TEST_CASE( testRootUnfoldSplinesTotalConstr ){
+  RooUnfoldResponse res;
+  Int_t entries=1000;
+  TH1F meas("my name is meas!!","", 100,0,100);
+  meas.FillRandom("gaus",entries );
+  Double_t tau=1.0e-5;
+  Int_t m0=1;
+  Int_t iauto=1000;
+  const char *name="pirla";
+  const char* title="yuyu";
+  RooUnfoldBasisSplines Total(&res, &meas, tau, m0, iauto, name, title);
+  BOOST_CHECK_EQUAL( Total.response(), &res );
+  BOOST_CHECK_EQUAL( Total.Hmeasured(), &meas );
+  // to be finished, add the check for the other variables....
+}
 
 BOOST_AUTO_TEST_SUITE_END()
 
