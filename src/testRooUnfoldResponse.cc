@@ -119,42 +119,45 @@ BOOST_AUTO_TEST_CASE(testmethodMiss1D){
   BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram  has no-zero entries before doing anything! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(0.0 == truth->GetEntries(), "truth histogram is filled. Number of entries found: " << truth->GetEntries() << " != 0");
-  //check if all histograms are empty after the first call of Miss()
+  //check all histograms after the first call of Miss()
   responseWithNumberOfBins.Miss(1.5);
   BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram  has no-zero entries while using Miss() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(1.0 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1.0");
   BOOST_CHECK_MESSAGE(1.0 == truth->GetEntries(), "truth histogram more than once. Number of entries found: " << truth->GetEntries() << " != 1.0");
+  //check all histograms after the second call of Miss()
   responseWithNumberOfBins.Miss(0.5);
   BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram  has no-zero entries while using Miss() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(1.0 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
   BOOST_CHECK_MESSAGE(1.0 == truth->GetBinContent(1), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
   BOOST_CHECK_MESSAGE(2.0 == truth->GetEntries(), "truth histogram more than twice. Number of entries found: " << truth->GetEntries() << " != 2.0");
+  //check all histograms after the 3rd call of Miss()
   responseWithNumberOfBins.Miss(1.5);
   BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram  has no-zero entries while using Miss() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(2 == truth->GetBinContent(2), "Truth histogram not filled with two entries. Number of entries found: " << truth->GetBinContent(2) << " != 2");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "Truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
   BOOST_CHECK_MESSAGE(0 == truth->GetBinContent(3), "Truth histogram is filled. Number of entries found: " << truth->GetBinContent(3) << " != 0");
   BOOST_CHECK_MESSAGE(3.0 == truth->GetEntries(), "truth histogram more than three times. Number of entries found: " << truth->GetEntries() << " != 3.0");
+  //check all histograms after the 4th call of Miss()
   responseWithNumberOfBins.Miss(2.5,5);
   BOOST_CHECK_MESSAGE(0.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram  has no-zero entries while using Miss() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(2 == truth->GetBinContent(2), "Truth histogram not filled with two entries. Number of entries found: " << truth->GetBinContent(2) << " != 2");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(1), "Truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(1) << " != 1");
   BOOST_CHECK_MESSAGE(5 == truth->GetBinContent(3), "Truth histogram not filled with five entries. Number of entries found: " << truth->GetBinContent(3) << " != 5");
@@ -180,30 +183,56 @@ BOOST_AUTO_TEST_CASE(testmethodFake1D){
   BOOST_CHECK_MESSAGE(0.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram has no-zero entries before doing anything! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(0.0 == truth->GetEntries(), "truth histogram is filled. Number of entries found: " << truth->GetEntries() << " != 0");
-  //check all histograms after the first call of Miss()
+  //check all histograms after the first call of Fake()
   responseWithNumberOfBins.Fake(1.5);
   BOOST_CHECK_MESSAGE(1.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries is wrong: " << responseWithNumberOfBins.FakeEntries() << " != 1");
   BOOST_CHECK_MESSAGE(1.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 1");
   BOOST_CHECK_MESSAGE(1.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 1");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram has no-zero entries while using Fake() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(0.0 == truth->GetEntries(), "truth histogram is filled. Number of entries found: " << truth->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(1 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 1");
   BOOST_CHECK_MESSAGE(1 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 1");
-  //check all histograms after the second call of Miss()
+  //check all histograms after the second call of Fake()
   responseWithNumberOfBins.Fake(0.5);
   BOOST_CHECK_MESSAGE(2.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries is wrong: " << responseWithNumberOfBins.FakeEntries() << " != 2");
   BOOST_CHECK_MESSAGE(2.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 2");
   BOOST_CHECK_MESSAGE(2.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 2");
   BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
-  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram is filled! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram has no-zero entries while using Fake() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
   BOOST_CHECK_MESSAGE(0.0 == truth->GetEntries(), "truth histogram is filled. Number of entries found: " << truth->GetEntries() << " != 0");
   BOOST_CHECK_MESSAGE(1 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 1");
-  BOOST_CHECK_MESSAGE(1 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 2");
-  BOOST_CHECK_MESSAGE(1 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 1");
-  BOOST_CHECK_MESSAGE(1 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(1.0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 1.0");
+  BOOST_CHECK_MESSAGE(1.0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 1.0");
+  BOOST_CHECK_MESSAGE(1.0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 1.0");
+  //check all histograms after the 3rd call of Fake()
+  responseWithNumberOfBins.Fake(1.5);
+  BOOST_CHECK_MESSAGE(3.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries is wrong: " << responseWithNumberOfBins.FakeEntries() << " != 3");
+  BOOST_CHECK_MESSAGE(3.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 3");
+  BOOST_CHECK_MESSAGE(3.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 3");
+  BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram has no-zero entries while using Fake() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == truth->GetEntries(), "truth histogram is filled. Number of entries found: " << truth->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(1.0 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 1.0");
+  BOOST_CHECK_MESSAGE(2.0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 2.0");
+  BOOST_CHECK_MESSAGE(1.0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 1.0");
+  BOOST_CHECK_MESSAGE(2.0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 2.0");
+  //check all histograms after the 4th call of Fake()
+  responseWithNumberOfBins.Fake(2.5,5);
+  BOOST_CHECK_MESSAGE(4.0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries is wrong: " << responseWithNumberOfBins.FakeEntries() << " != 4");
+  BOOST_CHECK_MESSAGE(4.0 == measured->GetEntries(), "Measured histogram is filled. Number of entries found: " << measured->GetEntries() << " != 4");
+  BOOST_CHECK_MESSAGE(4.0 == fakes->GetEntries(), "fakes histogram is filled. Number of entries found: " << fakes->GetEntries() << " != 4");
+  BOOST_CHECK_MESSAGE(0.0 == response->GetEntries(), "Response histogram is filled. Number of entries found: " << response->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(0.0 == responsenooverflow->GetEntries(), "Responsenooverflow histogram has no-zero entries while using Fake() method! Number of entries found: " << responsenooverflow->GetEntries() << " != 0 [this bug had been reported to the RooUnfold creator]");
+  BOOST_CHECK_MESSAGE(0.0 == truth->GetEntries(), "truth histogram is filled. Number of entries found: " << truth->GetEntries() << " != 0");
+  BOOST_CHECK_MESSAGE(1.0 == measured->GetBinContent(1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 1.0");
+  BOOST_CHECK_MESSAGE(2.0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(1) << " != 2.0");
+  BOOST_CHECK_MESSAGE(5.0 == measured->GetBinContent(3), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(3) << " != 5.0");
+  BOOST_CHECK_MESSAGE(1.0 == fakes->GetBinContent(1), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(1) << " != 1.0");
+  BOOST_CHECK_MESSAGE(2.0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 2.0");
+  BOOST_CHECK_MESSAGE(5.0 == fakes->GetBinContent(3), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(3) << " != 5.0");
 }
 
 BOOST_AUTO_TEST_CASE(testFill1D){
@@ -213,6 +242,9 @@ BOOST_AUTO_TEST_CASE(testFill1D){
   double  weight =7.3;
 
   responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth,weight);
+  //sanity test: check if we are testing the correct dimension
+  BOOST_CHECK_MESSAGE(1 == responseSameBinsMeasuredTruth.GetDimensionMeasured() , "Dimension measured is wrong : " << responseSameBinsMeasuredTruth.GetDimensionMeasured() << " != 1");
+  BOOST_CHECK_MESSAGE(1 == responseSameBinsMeasuredTruth.GetDimensionTruth() , "Dimension truth is wrong : " << responseSameBinsMeasuredTruth.GetDimensionTruth() << " != 1");
   //test if measured histogram was filled right
   TH1* measuredHistogram = responseSameBinsMeasuredTruth.Hmeasured();
 
