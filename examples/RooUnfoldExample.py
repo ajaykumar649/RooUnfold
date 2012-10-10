@@ -12,7 +12,7 @@
 
 from ROOT import gRandom, TH1, TH1D, cout, gROOT
 
-gROOT.LoadMacro( "/home/skluth/unfold/RooUnfold/libRooUnfold.so" )
+gROOT.LoadMacro( "/afs/cern.ch/user/k/kirschen/scratch0/RooUnfold/libRooUnfold.so" )
 
 from ROOT import RooUnfoldResponse
 from ROOT import RooUnfold

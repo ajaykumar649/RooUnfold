@@ -3,9 +3,8 @@
 
 #include "RooUnfoldResponse.h"
 
-#include "TH2.h"
+#include "TRandom.h"
 #include "TH2D.h"
-#include "TH1.h"
 
 // BOOST test stuff:
 #define BOOST_TEST_DYN_LINK
@@ -15,12 +14,32 @@
 // Namespaces:
 using std::string;
 
+
+//==============================================================================
+// Global definitions
+//==============================================================================
+
+const Double_t cutdummy= -99999.0;
+
 // Test fixture for all tests:
 class RooUnfoldResponseFixture{
 public:
   RooUnfoldResponseFixture()
   {
     BOOST_MESSAGE( "Create RooUnfoldResponseFixture" );
+    //Initialize RooUnfoldResponse instance with same entries for testing;
+    responseFilledWithSomeEntries=RooUnfoldResponse(40, -10.0, 10.0);
+    TRandom FixedSeedRandom(111);
+    // Train with a Breit-Wigner, mean 0.3 and width 2.5.
+    for (Int_t i=0; i<10000; i++) {
+      double xt = FixedSeedRandom.BreitWigner(0.3, 2.5);
+      double x = xt + smear(xt); //introduce
+						       //bias and smear
+    if (x!=cutdummy)
+      responseFilledWithSomeEntries.Fill (x, xt);
+    else
+      responseFilledWithSomeEntries.Miss (xt);
+    }
     responseSameBinsMeasuredTruth = RooUnfoldResponse(10,0.,100.);
   }
   virtual ~RooUnfoldResponseFixture(){
@@ -28,6 +47,18 @@ public:
   }
   RooUnfoldResponse response;
   RooUnfoldResponse responseSameBinsMeasuredTruth;
+  RooUnfoldResponse responseFilledWithSomeEntries;
+
+private:
+  Double_t smear (Double_t xt)
+  {
+    Double_t xeff= 0.3 + (1.0-0.3)/20*(xt+10.0);  // efficiency
+    Double_t x= gRandom->Rndm();
+    if (x>xeff) return cutdummy;
+    Double_t xsmear= gRandom->Gaus(-2.5,0.2);     // bias and smear
+    return xt+xsmear;
+  }
+  
 };
 
 
@@ -66,12 +97,11 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   double low = 0;
   double high = 3;
   RooUnfoldResponse responseWithNumberOfBins(numberOfBins, low, high);
+  responseWithNumberOfBins.Miss(1.5);
   const TH1* measured = responseWithNumberOfBins.Hmeasured();
   const TH1* fakes = responseWithNumberOfBins.Hfakes();
   const TH1* truth = responseWithNumberOfBins.Htruth();
   const TH2* response = responseWithNumberOfBins.Hresponse();
-  responseWithNumberOfBins.Miss(1.5);
-  BOOST_CHECK_MESSAGE(0 == responseWithNumberOfBins.FakeEntries() , "Number of fake entries found: " << responseWithNumberOfBins.FakeEntries() << " != 0");
   BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
@@ -98,6 +128,21 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,1), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,1) << " != 0");
   }
 
+BOOST_AUTO_TEST_CASE(testmethodFake){
+  int numberOfBins = 3;
+  double low = 0;
+  double high = 3;
+  RooUnfoldResponse responseWithNumberOfBins(numberOfBins, low, high);
+  responseWithNumberOfBins.Fake(1.5);
+  const TH1* measured = responseWithNumberOfBins.Hmeasured();
+  const TH1* fakes = responseWithNumberOfBins.Hfakes();
+  const TH1* truth = responseWithNumberOfBins.Htruth();
+  const TH2* response = responseWithNumberOfBins.Hresponse();
+  BOOST_CHECK_MESSAGE(1 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(1 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == truth->GetBinContent(2), "truth histogram not filled with zero entry. Number of entries found: " << truth->GetBinContent(2) << " != 0");
+}
+
 BOOST_AUTO_TEST_CASE(testFill1D){
   //test with default weight
   double xMeasured = 42;
@@ -119,5 +164,20 @@ BOOST_AUTO_TEST_CASE(testUseOverflowStatus){
   BOOST_CHECK_MESSAGE(response.UseOverflowStatus()==false,"default constructor does not initialize with overflow set to false");
 
 }
+
+
+//Test of add-function
+BOOST_AUTO_TEST_CASE(testAddFunction){
+  RooUnfoldResponse testObject = responseFilledWithSomeEntries;
+  int noOfEntriesInMeasuredHist = testObject.Hmeasured()->GetEntries(); 
+  //  std::cout << testObject.Hmeasured()->GetEntries() << std::endl;
+  testObject.Add(responseFilledWithSomeEntries);
+  BOOST_CHECK_MESSAGE(testObject.Hmeasured()->GetEntries()==2*noOfEntriesInMeasuredHist,"Adding the same RooUnfoldResponse did not result in twice the number of entries in Hmeasured");
+  //  std::cout << testObject.Hmeasured()->GetEntries() << std::endl;
+
+  //should be extended :)
+}
+
+
 
 BOOST_AUTO_TEST_SUITE_END()
