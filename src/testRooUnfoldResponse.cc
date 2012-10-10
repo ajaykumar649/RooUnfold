@@ -4,6 +4,7 @@
 #include "RooUnfoldResponse.h"
 
 #include "TH2.h"
+#include "TH1.h"
 
 // BOOST test stuff:
 #define BOOST_TEST_DYN_LINK
@@ -28,7 +29,6 @@ public:
 
 // Declare test suite name and fixture class to BOOST:
 BOOST_FIXTURE_TEST_SUITE( RooUnfoldResponseSuite, RooUnfoldResponseFixture )
-//BOOST_AUTO_TEST_SUITE( RooUnfoldResponseSuite )
 
 // Test cases:
 
@@ -61,17 +61,15 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   double low = 0;
   double high = 3;
   RooUnfoldResponse responseWithNumberOfBins(numberOfBins, low, high);
-  responseWithNumberOfBins->Miss(1.5);
-  const TH1* measured = responseWithNumberOfBins->Hmeasured();
-  const TH1* fakes = responseWithNumberOfBins->Hfakes();
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) " != 0");
-  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) " != 0"); 
-}
-
-//Test of UseOverflowStatus
-BOOST_AUTO_TEST_CASE(testUseOverflowStatus){
-  //  RooUnfoldResponse testObject;
-  BOOST_CHECK_MESSAGE(response.UseOverflowStatus()==false,"default constructor does not initialize with overflow set to false");
+  responseWithNumberOfBins.Miss(1.5);
+  const TH1* measured = responseWithNumberOfBins.Hmeasured();
+  const TH1* fakes = responseWithNumberOfBins.Hfakes();
+  const TH1* truth = responseWithNumberOfBins.Htruth();
+  const TH2* response = responseWithNumberOfBins.Hresponse();
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0"); 
 }
 
 BOOST_AUTO_TEST_SUITE_END()
