@@ -70,11 +70,25 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   const TH1* fakes = responseWithNumberOfBins.Hfakes();
   const TH1* truth = responseWithNumberOfBins.Htruth();
   const TH2* response = responseWithNumberOfBins.Hresponse();
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
-  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with zero entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
+  BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with zero entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
-  }
+}
+
+BOOST_AUTO_TEST_CASE(testmethodFake){
+  int numberOfBins = 3;
+  double low = 0;
+  double high = 3;
+  RooUnfoldResponse responseWithNumberOfBins(numberOfBins, low, high);
+  responseWithNumberOfBins.Fake(1.5);
+  const TH1* measured = responseWithNumberOfBins.Hmeasured();
+  const TH1* fakes = responseWithNumberOfBins.Hfakes();
+  const TH1* truth = responseWithNumberOfBins.Htruth();
+  const TH2* response = responseWithNumberOfBins.Hresponse();
+  BOOST_CHECK_MESSAGE(1 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(1 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 1");
+  BOOST_CHECK_MESSAGE(0 == truth->GetBinContent(2), "truth histogram not filled with zero entry. Number of entries found: " << truth->GetBinContent(2) << " != 0");
+}
 
 BOOST_AUTO_TEST_CASE(testFill1D){
   //test with default weight
