@@ -1,4 +1,5 @@
 
+//
 // Unit tests for RooUnfold
 //
 
@@ -14,6 +15,7 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE roounfoldtest
 #include <boost/test/unit_test.hpp>
+
 
 #include "RooUnfoldResponse.h"
 #include "RooUnfold.h"
@@ -40,6 +42,7 @@ Double_t smear (Double_t xt)
 class RooUnfoldTestFixture {
 public:
   RooUnfoldTestFixture(){
+    BOOST_MESSAGE( "----------------------------" );
     BOOST_MESSAGE( "Create RooUnfoldTestFixture" );
 
 
@@ -96,6 +99,7 @@ public:
   }
   virtual ~RooUnfoldTestFixture() {
     BOOST_MESSAGE( "Tear down RooUnfoldTestFixture" );
+    BOOST_MESSAGE( "----------------------------" );
   }
   //  RooUnfold reader;
   //roounford pointer 
@@ -111,6 +115,18 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
   BOOST_CHECK_EQUAL( 0, 0 );
 }
 
+BOOST_AUTO_TEST_CASE( testConstructor ) {
+  BOOST_MESSAGE( "horst" );
+  RooUnfold* ru = new RooUnfold("r", "u");
+  ru->Print();
+  delete ru;
+}
+
+//   string value, expectedValue;
+//   value= reader.get( "user", "multiline", "" );
+//   expectedValue= "this is\na\nmultiline";
+//   BOOST_CHECK_EQUAL( value, expectedValue );
+// }
 
 // Test error state after parsing:
 // BOOST_AUTO_TEST_CASE( testParse ) {
