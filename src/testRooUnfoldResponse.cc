@@ -17,14 +17,18 @@ using std::string;
 // Test fixture for all tests:
 class RooUnfoldResponseFixture{
 public:
-  RooUnfoldResponseFixture(){
+  RooUnfoldResponseFixture()
+  {
     BOOST_MESSAGE( "Create RooUnfoldResponseFixture" );
+    responseSameBinsMeasuredTruth = RooUnfoldResponse(10,0.,100.);
   }
   virtual ~RooUnfoldResponseFixture(){
     BOOST_MESSAGE( "Tear down RooUnfoldResponseFixture" );
   }
   RooUnfoldResponse response;
+  RooUnfoldResponse responseSameBinsMeasuredTruth;
 };
+
 
 
 // Declare test suite name and fixture class to BOOST:
@@ -69,7 +73,29 @@ BOOST_AUTO_TEST_CASE(testmethodMiss){
   BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(0 == fakes->GetBinContent(2), "fakes histogram not filled with one entry. Number of entries found: " << fakes->GetBinContent(2) << " != 0");
   BOOST_CHECK_MESSAGE(1 == truth->GetBinContent(2), "truth histogram not filled with one entry. Number of entries found: " << truth->GetBinContent(2) << " != 1");
-  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0"); 
+  BOOST_CHECK_MESSAGE(0 == measured->GetBinContent(0,2), "measured histogram not filled with one entry. Number of entries found: " << measured->GetBinContent(0,2) << " != 0");
+  }
+
+BOOST_AUTO_TEST_CASE(testFill1D){
+  //test with default weight
+  double xMeasured = 42;
+  double xTruth = 74;
+  responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth);
+  TH1* measuredHistogram = responseSameBinsMeasuredTruth.Hmeasured();
+  int entriesMeasured = measuredHistogram->GetEntries();
+  //int 
+  //BOOST_CHECK_MESSAGE();
+
+
+  TH1* truthHistogram = responseSameBinsMeasuredTruth.Htruth();
+  TH2* responseHistogram = responseSameBinsMeasuredTruth.Hresponse();
+}
+
+//Test of UseOverflowStatus
+BOOST_AUTO_TEST_CASE(testUseOverflowStatus){
+  //  RooUnfoldResponse testObject;
+  BOOST_CHECK_MESSAGE(response.UseOverflowStatus()==false,"default constructor does not initialize with overflow set to false");
+
 }
 
 BOOST_AUTO_TEST_SUITE_END()
