@@ -58,16 +58,16 @@ public:
   std::cout << "==================================== TRAIN ====================================" << std::endl;
   //  RooUnfoldResponse response (40, -10.0, 10.0);
   RooUnfoldResponse response (40, -10.0, 10.0, 20, -10.0, 10.0 );
-
+  
   // Train with a Breit-Wigner, mean 0.3 and width 2.5.
   for (Int_t i= 0; i<100000; i++) {
     Double_t xt= gRandom->BreitWigner (0.3, 2.5);
     Double_t x= smear (xt);
-
-      response.Fill (x, xt);
-
+    
+    response.Fill (x, xt);
+    
   }
-
+  
   std::cout << "==================================== TEST =====================================" << std::endl;
   // TH1D* hTrue= new TH1D ("true", "Test Truth",    40, -10.0, 10.0);
   TH1D* hTrue= new TH1D( "true", "Test Truth", 20, -10.0, 10.0 );
@@ -89,7 +89,7 @@ public:
   TH1D* hReco= (TH1D*) unfold->Hreco();
 
   unfold->Print();
-  //  unfold->PrintTable (cout, hTrue);
+  unfold->PrintTable (std::cout, hTrue);
   //  hReco->Draw();
   //  hMeas->Draw("SAME");
   //  hTrue->SetLineColor(8);
@@ -118,6 +118,35 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
 BOOST_AUTO_TEST_CASE( testConstructor ) {
   BOOST_MESSAGE( "testConstructor" );
 }
+
+
+BOOST_AUTO_TEST_CASE( Print){
+  BOOST_MESSAGE("***Print test***");
+
+}
+
+BOOST_AUTO_TEST_CASE( PrintTable){
+  BOOST_MESSAGE("***PrintTable test***");
+
+}
+
+BOOST_AUTO_TEST_CASE( GetErrMat){
+  BOOST_MESSAGE("***GetErrMat test***");
+
+}
+
+BOOST_AUTO_TEST_CASE(RunToy){
+  BOOST_MESSAGE("RunToy test");
+}
+
+BOOST_AUTO_TEST_CASE(GetStepSizeParm){
+  BOOST_CHECK_MESSAGE(unfold->GetStepSizeParm==0,"bla")
+
+  BOOST_CHECK_EQUAL(bla, 0);
+  //  BOOST_CHECK_EQUAL(GetStepSizeParm(), 0.);
+}
+
+
 
 //   string value, expectedValue;
 //   value= reader.get( "user", "multiline", "" );
