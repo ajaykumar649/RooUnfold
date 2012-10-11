@@ -43,7 +43,7 @@ class RooUnfoldTestFixture {
 public:
 
   RooUnfold* unfold;
-  //  RooUnfoldResponse response;
+  RooUnfoldResponse* response;
 
   RooUnfoldTestFixture(){
     BOOST_MESSAGE( "----------------------------" );
@@ -61,14 +61,15 @@ public:
 
   std::cout << "==================================== TRAIN ====================================" << std::endl;
 
-  RooUnfoldResponse response (40, -10.0, 10.0, 20, -10.0, 10.0 );
+  response = new RooUnfoldResponse(40, -10.0, 10.0, 20, -10.0, 10.0 );
   
   // Train with a Breit-Wigner, mean 0.3 and width 2.5.
   for (Int_t i= 0; i<100000; i++) {
     Double_t xt= gRandom->BreitWigner (0.3, 2.5);
     Double_t x= smear (xt);
     
-    response.Fill (x, xt);
+    //    response.Fill (x, xt);
+    response->Fill (x, xt);
     
   }
   
@@ -86,7 +87,10 @@ public:
 
   std::cout << "==================================== UNFOLD ===================================" << std::endl;
   // RooUnfoldBayes   unfold (&response, hMeas, 4);    // OR
-  RooUnfold* unfold= new RooUnfold( &response, hMeas);
+  //  RooUnfold* unfold= new RooUnfold( &response, hMeas);
+
+  unfold= new RooUnfold( response, hMeas);
+
 //RooUnfoldSvd     unfold (&response, hMeas, 20);   // OR
 //RooUnfoldTUnfold unfold (&response, hMeas);
 
@@ -94,6 +98,7 @@ public:
 
   unfold->Print();
   unfold->PrintTable (std::cout, hTrue);
+  std::cout << "GetStepSizeParm " << unfold->GetStepSizeParm() << std::endl;
   //  hReco->Draw();
   //  hMeas->Draw("SAME");
   //  hTrue->SetLineColor(8);
@@ -145,9 +150,10 @@ BOOST_AUTO_TEST_CASE(RunToy){
 
 BOOST_AUTO_TEST_CASE(GetStepSizeParm){
   BOOST_MESSAGE("GetStepSizeParm test");
-  //  unfold->Print();
-  //  BOOST_CHECK_MESSAGE(unfold->GetStepSizeParm()==0,"bla");
-  //  BOOST_CHECK_EQUAL(GetStepSizeParm(), 0.);
+
+  BOOST_CHECK_MESSAGE(unfold->GetStepSizeParm()==0,"bla");
+  BOOST_CHECK_MESSAGE(unfold->GetStepSizeParm()!=0,"blubb");
+
 }
 
 
