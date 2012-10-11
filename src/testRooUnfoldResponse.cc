@@ -5,6 +5,7 @@
 
 #include "TRandom.h"
 #include "TH2D.h"
+#include "TString.h"
 
 // BOOST test stuff:
 #define BOOST_TEST_DYN_LINK
@@ -41,6 +42,83 @@ public:
   virtual ~RooUnfoldResponseFixture(){
     BOOST_MESSAGE( "Tear down RooUnfoldResponseFixture" );
   }
+
+  /**
+   * Gets and returns the requested histograms of the given RooUnfoldResponse object. Known histogram names are: measured, truth and response.
+   * rooUnfoldResponse: a RooUnfoldResponse object containing the histograms
+   * histograms: required histogram names
+   * Return value: vector with the requested histograms
+   */
+  static std::vector<const TH1*> GetRooUnfoldHistograms(const RooUnfoldResponse& rooUnfoldResponse,TString histograms){
+     std::vector<const TH1*> result;
+
+     if(histograms.Contains("measured")){
+       const TH1* measuredHistogram = rooUnfoldResponse.Hmeasured();
+       result.push_back(measuredHistogram);
+     }
+
+     if(histograms.Contains("truth")){
+       const TH1* truthHistogram = rooUnfoldResponse.Htruth();
+       result.push_back(truthHistogram);
+     }
+
+     if(histograms.Contains("response")){
+       const TH2* responseHistogram = rooUnfoldResponse.Hresponse();  
+       result.push_back(responseHistogram);
+     }
+
+    return result;
+  }
+
+  /**
+   * This method tests the number of total entries for the measured histogram, the truth histogram and the response histogram.
+   * rooUnfoldResponse: a RooUnfoldResponse object containing the three histograms
+   * entriesExpected: expected number of total entries
+   */
+  static void testTotalEntriesOfHistograms(const RooUnfoldResponse& rooUnfoldResponse, const int&  entriesExpected){
+    if(entriesExpected<0){
+      BOOST_MESSAGE("Number of total entries of a histogram has to be positive! (entries: "<< entriesExpected<< ")");
+      return;
+    }
+    //Get three histograms from RooUnfoldResponse object
+    std::vector<const TH1*> histograms =  GetRooUnfoldHistograms(rooUnfoldResponse,"measured truth response");
+
+    //test the total entries number for all histograms
+    for(unsigned int i=0; i<histograms.size(); i++){
+      const TH1* histogram = histograms.at(i);
+      int entries = histogram->GetEntries();
+      BOOST_CHECK_MESSAGE(entriesExpected==entries,"Wrong number of total entries for histogram "<< histogram->GetName() <<". Expected " << entriesExpected<<", but was: "<<entries);
+    }
+  }
+
+  /**
+   * This method tests the number of weighted entries for the measured histogram, the truth histogram and the response histogram.
+   * rooUnfoldResponse: a RooUnfoldResponse object containing the three histograms
+   * weightedEntriesExpected: expected number of weighted entries
+   */
+  static void testWeightedEntriesOfHistograms(const RooUnfoldResponse& rooUnfoldResponse, const double&  weightedEntriesExpected){
+    //Get three histograms from RooUnfoldResponse object
+    std::vector<const TH1*> histograms =  GetRooUnfoldHistograms(rooUnfoldResponse,"measured truth response");
+
+    //test the total entries number for all histograms
+    for(unsigned int i=0; i<histograms.size(); i++){
+      const TH1* histogram = histograms.at(i);
+      double entries = histogram->Integral();
+      BOOST_CHECK_CLOSE(weightedEntriesExpected,entries,0.0001);
+    }
+  }
+
+  /**
+   * Tests if the bin content of the given histogram and bin is correct.
+   * histogram: histogram which bin content is to be checked
+   * bin: bin of histogram to be checked
+   * expectedBinContent: expected content of bin to be checked
+   */
+  static void testBinContent(const TH1& histogram,int bin, double expectedBinContent){
+    double binContent = histogram.GetBinContent(bin);
+    BOOST_CHECK_CLOSE(expectedBinContent,binContent,0.0001);
+  }
+
 
   RooUnfoldResponse response;
   RooUnfoldResponse responseSameBinsMeasuredTruth;
@@ -242,38 +320,27 @@ BOOST_AUTO_TEST_CASE(testFill1D){
 
   responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth,weight);
 
+  //test if number of total and weighted entries are right for all histograms
+   RooUnfoldResponseFixture::testTotalEntriesOfHistograms(responseSameBinsMeasuredTruth, 1);
+   RooUnfoldResponseFixture::testWeightedEntriesOfHistograms(responseSameBinsMeasuredTruth,weight);
+
   TH1* measuredHistogram = responseSameBinsMeasuredTruth.Hmeasured();
   TH1* truthHistogram = responseSameBinsMeasuredTruth.Htruth();
   TH2* responseHistogram = responseSameBinsMeasuredTruth.Hresponse();
   
-  std::vector<TH1*> histograms;
-  histograms.push_back(measuredHistogram);
-  histograms.push_back(truthHistogram);
-  histograms.push_back(responseHistogram);
 
- //test if number of total and weighted entries are right for all histograms
-  for(int i=0; i<histograms.size(); i++){
-    TH1* histogram =histograms.at(i);
-    int entries = histogram->GetEntries();
-    BOOST_CHECK_MESSAGE(entries==1,"Wrong number of total entries for histogram "<< histogram->GetName() <<". Expected 1, but was: "<<entries);
-    double entriesWeighted = histogram->Integral();
-    BOOST_CHECK_MESSAGE(entriesWeighted==weight,"Wrong number of weighted entries for histogram "<< histogram->GetName() <<". Expected  "<< weight <<", but was: "<<entriesWeighted);
-  }
 
   //test if right bin was filled for measured histogram
   int binMeasured = measuredHistogram->FindBin(xMeasured);
-  double binContentMeasured =measuredHistogram->GetBinContent(binMeasured);
-  BOOST_CHECK_MESSAGE(binContentMeasured==weight,"Wrong bin was filled for the measured histogram, expected, bin 4 to be filled, but filled bin: "<<binMeasured);
+  RooUnfoldResponseFixture::testBinContent(*measuredHistogram,binMeasured, weight);
 
   //test if right bin was filled for truth histogram
   int binTruth = truthHistogram->FindBin(xTruth);
-  double binContentTruth =truthHistogram->GetBinContent(binTruth);
-  BOOST_CHECK_MESSAGE(binContentTruth==weight,"Wrong bin was filled for the truth histogram, expected, bin 7 to be filled, but filled bin: "<<binTruth);
+  RooUnfoldResponseFixture::testBinContent(*truthHistogram,binTruth, weight);
 
   //test if right bin was filled for response histogram
   int binResponse = responseHistogram->FindBin(xMeasured,xTruth);
-  double binContentResponse =responseHistogram->GetBinContent(binResponse);
-  BOOST_CHECK_MESSAGE(binContentResponse==weight,"Wrong bin was filled for the truth histogram, expected, bin 101 to be filled, but filled bin: "<<binResponse);
+  RooUnfoldResponseFixture::testBinContent(*responseHistogram,binResponse, weight);
 
   //test default value for weight for filling
   responseSameBinsMeasuredTruth.Fill(xMeasured,xTruth);
@@ -313,11 +380,33 @@ BOOST_AUTO_TEST_CASE(testFill2D){
   double yTruth = 67;
   double weight = 2.1;
 
-  response2D.Fill(xMeasured,yMeasured,xTruth,yTruth,weight);
+  int maxBin = measuredBinX* measuredBinY*truthBinX*truthBinY;
+  int bin = response2D.Fill(xMeasured,yMeasured,xTruth,yTruth,weight);
+
+  //test if number of total and weighted entries are right for all histograms
+  RooUnfoldResponseFixture::testTotalEntriesOfHistograms(response2D, 1);
+  RooUnfoldResponseFixture::testWeightedEntriesOfHistograms(response2D,weight);
 
   TH1* resultMeasuredHistogram =response2D.Hmeasured();
-
   TH1* resultTruthHistogram =response2D.Htruth();
+  TH2* responseHistogram = response2D.Hresponse();
+
+    //test if right bin was filled for measured histogram (error in test)
+  int binMeasured = measuredHistogram->FindBin(xMeasured,yMeasured);
+  RooUnfoldResponseFixture::testBinContent(*measuredHistogram,binMeasured, weight);
+
+  //test if right bin was filled for truth histogram (error in test)
+  int binTruth = truthHistogram->FindBin(xTruth,yTruth);
+  RooUnfoldResponseFixture::testBinContent(*truthHistogram,binTruth, weight);
+
+  //test if right bin was filled for response histogram
+  int binX = RooUnfoldResponse::FindBin(measuredHistogram, xMeasured, yMeasured);
+  int binY = RooUnfoldResponse::FindBin(truthHistogram, xTruth, yTruth);
+  int binResponse = responseHistogram->FindBin(binX,binY);
+  RooUnfoldResponseFixture::testBinContent(*responseHistogram,binResponse, weight);
+
+
+  //test dimension also test with wrong dimensions
 
 }
 
