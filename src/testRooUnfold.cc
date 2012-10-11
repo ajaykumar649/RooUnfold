@@ -41,6 +41,10 @@ Double_t smear (Double_t xt)
 // Test fixture for all tests:
 class RooUnfoldTestFixture {
 public:
+
+  RooUnfold* unfold;
+  RooUnfoldResponse* response;
+
   RooUnfoldTestFixture(){
     BOOST_MESSAGE( "----------------------------" );
     BOOST_MESSAGE( "Create RooUnfoldTestFixture" );
@@ -56,18 +60,19 @@ public:
 
 
   std::cout << "==================================== TRAIN ====================================" << std::endl;
-  //  RooUnfoldResponse response (40, -10.0, 10.0);
-  RooUnfoldResponse response (40, -10.0, 10.0, 20, -10.0, 10.0 );
 
+  response = new RooUnfoldResponse(40, -10.0, 10.0, 20, -10.0, 10.0 );
+  
   // Train with a Breit-Wigner, mean 0.3 and width 2.5.
   for (Int_t i= 0; i<100000; i++) {
     Double_t xt= gRandom->BreitWigner (0.3, 2.5);
     Double_t x= smear (xt);
-
-      response.Fill (x, xt);
-
+    
+    //    response.Fill (x, xt);
+    response->Fill (x, xt);
+    
   }
-
+  
   std::cout << "==================================== TEST =====================================" << std::endl;
   // TH1D* hTrue= new TH1D ("true", "Test Truth",    40, -10.0, 10.0);
   TH1D* hTrue= new TH1D( "true", "Test Truth", 20, -10.0, 10.0 );
@@ -82,14 +87,18 @@ public:
 
   std::cout << "==================================== UNFOLD ===================================" << std::endl;
   // RooUnfoldBayes   unfold (&response, hMeas, 4);    // OR
-  RooUnfold* unfold= new RooUnfold( &response, hMeas);    // OR
+  //  RooUnfold* unfold= new RooUnfold( &response, hMeas);
+
+  unfold= new RooUnfold( response, hMeas);
+
 //RooUnfoldSvd     unfold (&response, hMeas, 20);   // OR
 //RooUnfoldTUnfold unfold (&response, hMeas);
 
   TH1D* hReco= (TH1D*) unfold->Hreco();
 
   unfold->Print();
-  //  unfold->PrintTable (cout, hTrue);
+  unfold->PrintTable (std::cout, hTrue);
+  std::cout << "GetStepSizeParm " << unfold->GetStepSizeParm() << std::endl;
   //  hReco->Draw();
   //  hMeas->Draw("SAME");
   //  hTrue->SetLineColor(8);
@@ -118,6 +127,36 @@ BOOST_AUTO_TEST_CASE( testRooUnfoldDummyTest ) {
 BOOST_AUTO_TEST_CASE( testConstructor ) {
   BOOST_MESSAGE( "testConstructor" );
 }
+
+
+BOOST_AUTO_TEST_CASE( Print){
+  BOOST_MESSAGE("***Print test***");
+
+}
+
+BOOST_AUTO_TEST_CASE( PrintTable){
+  BOOST_MESSAGE("***PrintTable test***");
+
+}
+
+BOOST_AUTO_TEST_CASE( GetErrMat){
+  BOOST_MESSAGE("***GetErrMat test***");
+
+}
+
+BOOST_AUTO_TEST_CASE(RunToy){
+  BOOST_MESSAGE("RunToy test");
+}
+
+BOOST_AUTO_TEST_CASE(GetStepSizeParm){
+  BOOST_MESSAGE("GetStepSizeParm test");
+
+  BOOST_CHECK_MESSAGE(unfold->GetStepSizeParm()==0,"bla");
+  BOOST_CHECK_MESSAGE(unfold->GetStepSizeParm()!=0,"blubb");
+
+}
+
+
 
 //   string value, expectedValue;
 //   value= reader.get( "user", "multiline", "" );
