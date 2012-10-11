@@ -15,6 +15,8 @@
 
 #include "RooUnfold.h"
 
+class testHelperRooUnfoldBasisSplines;
+
 class RooUnfoldResponse;
 class TH1;
 class TH1D;
@@ -25,6 +27,9 @@ class TH2D;
 #include "TVectorD.h"
 
 class RooUnfoldBasisSplines : public RooUnfold {
+
+  // friend class to get an handle on the private members for testing
+  friend class testHelperRooUnfoldBasisSplines;
 
 public:
 

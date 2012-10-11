@@ -2,6 +2,7 @@
 // Unit tests for RooUnfoldBasisSplines
 
 #include "RooUnfoldBasisSplines.h"
+#include "testHelperRooUnfoldBasisSplines.h"
 
 #include <iostream>
 #include <stdexcept>
@@ -22,12 +23,30 @@ using std::complex;
 // Test fixture for all tests:
 class RooUnfoldBasisSplinesTestFixture {
 public:
-  RooUnfoldBasisSplinesTestFixture(){
+  RooUnfoldBasisSplinesTestFixture()
+    : res(), entries(1000), meas("my name is meas!!","", 100,0,100),
+      tau(1.0e-5), m0(1), iauto(1000), name("pirla"), title("yuyu"),
+      Total(&res, &meas, tau, m0, iauto, name, title),
+      testHelper(&Total)
+  {
     BOOST_MESSAGE( "Create RooUnfoldBasisSplinesTestFixture" );
+
+    meas.FillRandom("gaus", entries);
   }
   virtual ~RooUnfoldBasisSplinesTestFixture() {
     BOOST_MESSAGE( "Tear down RooUnfoldBasisSplinesTestFixture" );
   }
+
+  RooUnfoldResponse res;
+  Int_t entries;
+  TH1F meas;
+  Double_t tau;
+  Int_t m0;
+  Int_t iauto;
+  const char* name;
+  const char* title;
+  RooUnfoldBasisSplines Total;
+  testHelperRooUnfoldBasisSplines testHelper;
 };
 
 // Declare test suite name and fixture class to BOOST:
@@ -69,20 +88,20 @@ BOOST_AUTO_TEST_CASE( testRootUnfoldSplinestStringConstr ){
 
 //test of the named constructor with a constructor
 BOOST_AUTO_TEST_CASE( testRootUnfoldSplinesTotalConstr ){
-  RooUnfoldResponse res;
-  Int_t entries=1000;
-  TH1F meas("my name is meas!!","", 100,0,100);
-  meas.FillRandom("gaus",entries );
-  Double_t tau=1.0e-5;
-  Int_t m0=1;
-  Int_t iauto=1000;
-  const char *name="pirla";
-  const char* title="yuyu";
-  RooUnfoldBasisSplines Total(&res, &meas, tau, m0, iauto, name, title);
   BOOST_CHECK_EQUAL( Total.response(), &res );
   BOOST_CHECK_EQUAL( Total.Hmeasured(), &meas );
-  // to be finished, add the check for the other variables....
+  BOOST_CHECK_EQUAL( testHelper.GetTau(), tau );
+  BOOST_CHECK_EQUAL( testHelper.GetM0(), m0 );
+  BOOST_CHECK_EQUAL( testHelper.GetIauto(), iauto );
+  BOOST_CHECK_EQUAL( Total.GetName(), name );
+  BOOST_CHECK_EQUAL( Total.GetTitle(), title );
 }
+
+//test the copy constructor
+BOOST_AUTO_TEST_CASE( testRooUnfoldSplinesCopyConstructor ){
+
+}
+
 
 BOOST_AUTO_TEST_SUITE_END()
 
