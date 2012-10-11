@@ -100,6 +100,7 @@ BOOST_AUTO_TEST_CASE(testConstructorNumberOfBins){
 }
 
 BOOST_AUTO_TEST_CASE(testmethodMiss1D){
+  // FIXME: Needs factorization
   int numberOfBins = 3;
   double low = 0;
   double high = 3;
@@ -164,6 +165,7 @@ BOOST_AUTO_TEST_CASE(testmethodMiss1D){
   }
 
 BOOST_AUTO_TEST_CASE(testmethodFake1D){
+  // FIXME: Needs factorization
   int numberOfBins = 3;
   double low = 0;
   double high = 3;
