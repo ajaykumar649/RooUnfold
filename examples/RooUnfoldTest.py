@@ -9,10 +9,7 @@ from ROOT import RooUnfoldBayes
 from ROOT import RooUnfoldSvd
 from ROOT import RooUnfoldTUnfold
 from ROOT import RooUnfoldInvert
-
 from ROOT import RooUnfoldBasisSplines
-
-# from ROOT import RooUnfoldReverse
 
 from ROOT import TProfile, TCanvas, TF1, TMatrixD, TH2D, TVectorD
 
@@ -51,8 +48,6 @@ def train( bininfo, gmean=-1.0, gsigma=0.05, leff=True, loufl=False,
     elif "bw" in opttfun:
         trainfun= TF1( "trainbw", "TMath::BreitWigner(x,4.0,1.0)",
                        bininfo["tlo"], bininfo["thi"] )
-        #trainfun= TF1( "trainbw", "TMath::BreitWigner(x,3.5,1.2)",
-        #               bininfo["tlo"], bininfo["thi"] )
     elif "gaus" in opttfun:
         trainfun= TF1( "traingaus", "TMath::Gaus(x,5.0,2.5)",
                        bininfo["tlo"], bininfo["thi"] )
@@ -88,26 +83,26 @@ def makeTestHistos( bininfo ):
     return hTrue, hMeas
 
 # Create unfolder object:
-def unfolderFactory( optunf, response, hMeas ):
+def unfolderFactory( optunf, response, hMeas, BasisSpline_m0=0 ):
     if "Bayes" in optunf:
         # Bayes unfoldung until chi^2 cut (max 10):
         unfold= RooUnfoldBayes( response, hMeas, 10, False, True )
     elif "SVD" in optunf:
-        # SVD unfoding with free regularisation
+        # SVD unfolding with free regularisation:
         unfold= RooUnfoldSvd( response, hMeas )
     elif "TUnfold" in optunf:
         # TUnfold with fixed regularisation tau=0.002
-        unfold= RooUnfoldTUnfold( response, hMeas )
-        # unfold= RooUnfoldTUnfold( response, hMeas, 0.002 )
+        unfold= RooUnfoldTUnfold( response, hMeas, 0.002 )
+        # unfold= RooUnfoldTUnfold( response, hMeas )
     elif "Invert" in optunf:
         unfold= RooUnfoldInvert( response, hMeas )
     elif "Reverse" in optunf:
-        # unfold= RooUnfoldReverse( response, hMeas )
         # Use equivalent Bayes with 1 iteration:
         unfold= RooUnfoldBayes( response, hMeas, 1 )
     elif "BasisSplines" in optunf:
-        #unfold= RooUnfoldBasisSplines( response, hMeas, 1.3e-6, 32 )
-        unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, 32, 2 )
+        # unfold= RooUnfoldBasisSplines( response, hMeas, 1.3e-6, 32 )
+        # unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, 32, 2 )
+        unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, BasisSpline_m0, 2 )
     return unfold
 
 # Run a test of the unfolding methods:
@@ -129,7 +124,13 @@ def rununfoldtest( bininfo, optunf, response,
                                 gmean=gmean, gsigma=gsigma, leff=leff )
     print "=========================== UNFOLD ========================"
     print "Unfolding method:", optunf
-    unfold= unfolderFactory( optunf, response, hMeas )
+    m0= 0
+    if optunf == "BasisSplines":
+        if optfun == "exp":
+            m0= 9
+        else:
+            m0= 32
+    unfold= unfolderFactory( optunf, response, hMeas, m0 )
     return unfold, hTrue, hMeas
 
 # Create text for histo titles:
@@ -172,7 +173,7 @@ def createBininfo( optfun ):
 def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
                optfun="exp", opttfun="" ):
 
-    if opttfun=="":
+    if opttfun == "":
         opttfun= optfun
     bininfo= createBininfo( optfun )
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
@@ -183,23 +184,24 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
     canv= TCanvas( "canv", "thruth vs reco pulls", 600, 800 )
     canv.Divide( 1, 3 )
 
-    gmean= -1.0
+    gmeantrain= -1.0
+    gmeantest= gmeantrain
     for sigma, ipad in [ [ 0.1, 1 ], [ 0.3, 2 ], [ 1.0, 3 ] ]:
         hPulls= TProfile( "pulls",
                           optunf + ", smear mu, s.d.= " +
-                          str(gmean) + ", " + str(sigma) +
+                          str(gmeantrain) + ", " + str(sigma) +
                           ", train: " + funttxt + ", test: " + funtxt +
                           ", " + str(ntest) + " tests",
                           bininfo["tbins"], bininfo["tlo"], bininfo["thi"] )
         hPulls.SetErrorOption( "s" )
         hPulls.SetYTitle( "Thruth reco pull" )
         histos.append( hPulls )
-        response= train( bininfo, gmean=gmean, gsigma=sigma, leff=leff,
+        response= train( bininfo, gmean=gmeantrain, gsigma=sigma, leff=leff,
                          opttfun=opttfun, loufl=loufl )
         for itest in range( ntest ):
             print "Test", itest
             unfold, hTrue, hMeas= rununfoldtest( bininfo, optunf, response,
-                                                 gmean=-1.0, gsigma=sigma,
+                                                 gmean=gmeantest, gsigma=sigma,
                                                  leff=leff, optfun=optfun )
             unfold.PrintTable( cout, hTrue, 2 )
             hReco= unfold.Hreco( 2 )
@@ -227,7 +229,7 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
 def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
                       loufl=False ):
 
-    if opttfun=="":
+    if opttfun == "":
         opttfun= optfun
     bininfo= createBininfo( optfun )
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
@@ -237,19 +239,20 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     canv= TCanvas( "canv", "feature size plots", 600, 800 )
     canv.Divide( 1, 3 )
 
-    gmean= -1.0
+    gmeantrain= -1.0
+    gmeantest= gmeantrain
     for sigma, ipad in [ [ 0.1, 1 ], [ 0.3, 2 ], [ 1.0, 3 ] ]:
-        response= train( bininfo, gmean=gmean, gsigma=sigma, leff=leff,
+        response= train( bininfo, gmean=gmeantrain, gsigma=sigma, leff=leff,
                          opttfun=opttfun, loufl=loufl )
         unfold, hTrue, hMeas= rununfoldtest( bininfo, optunf, response,
-                                             gmean=-1.0, gsigma=sigma,
+                                             gmean=gmeantest, gsigma=sigma,
                                              leff=leff,
                                              optfun=optfun )
         hReco= unfold.Hreco( 2 )
         histos.append( [ hTrue, hMeas, hReco ] )
         canv.cd( ipad )
         hReco.SetTitle( optunf + ", smear mu, s.d.= " +
-                        str(gmean) + ", " + str(sigma) +
+                        str(gmeantrain) + ", " + str(sigma) +
                         ", train: " + funttxt + ", test: " + funtxt )
         hReco.SetYTitle( "Entries" )
         hReco.Draw()
@@ -265,17 +268,18 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     return
 
 # Make all plots of unfolding tests:
-def doAllPlots():
-    for optunf in [ "Bayes", "SVD", "TUnfold", "Invert", "Reverse" ]:
+def doAllPlots( optunfs= "Bayes SVD TUnfold Invert Reverse BasisSplines" ):
+    optunftokens= optunfs.split()
+    for optunf in optunftokens:
         for optfun in [ "bw", "exp" ]:
             for opttfun in [ "", "gaus" ]:
                 for loufl in [ False, True ]:
                     featureSizePlots( optunf=optunf,
                                       optfun=optfun, opttfun=opttfun,
                                       loufl=loufl )
-#                    plotPulls( optunf=optunf,
-#                               optfun=optfun, opttfun=opttfun,
-#                               loufl=loufl )
+                    plotPulls( optunf=optunf,
+                               optfun=optfun, opttfun=opttfun,
+                               loufl=loufl )
     return
 
 

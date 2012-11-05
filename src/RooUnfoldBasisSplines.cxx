@@ -59,7 +59,8 @@ RooUnfoldBasisSplines::RooUnfoldBasisSplines( const TString& name,
 RooUnfoldBasisSplines::~RooUnfoldBasisSplines() {}
 
 // Assignment:
-RooUnfoldBasisSplines& RooUnfoldBasisSplines::operator= ( const RooUnfoldBasisSplines& rhs ) {
+RooUnfoldBasisSplines& 
+RooUnfoldBasisSplines::operator= ( const RooUnfoldBasisSplines& rhs ) {
   Assign( rhs );
   return *this;
 }
@@ -172,7 +173,8 @@ void RooUnfoldBasisSplines::Unfold() {
     }
   }
   if( verbose() >= 1 ) {
-    cout << "RooUnfoldBasisSplines::Unfold: use m0 and tau values: " 
+    cout << "RooUnfoldBasisSplines::Unfold: iauto= " << _iauto
+	 << ", use m0 and tau values: " 
 	 << _m0 << ", " << _tau << endl;
   }
   
@@ -219,22 +221,24 @@ void RooUnfoldBasisSplines::Unfold() {
   // on the regularisation behaviour:
   if( verbose() >= 2 ) {
     // Unreg. solution with eigenvalues of H:
-    TVectorD heigenvalues( np );
-    TMatrixD Uh= H.EigenVectors( heigenvalues );
+    TVectorD Heigenvalues( np );
+    TMatrixD Uh= H.EigenVectors( Heigenvalues );
+    Double_t mineigenvalue= Heigenvalues.Min();
+    if( mineigenvalue < 0.0 ) Heigenvalues-= 2.0*mineigenvalue;
     TMatrixD UhT( Uh );
     UhT.T();
     TMatrixDSym D( np );
     TMatrixDSym Dhalf( np );
     TMatrixDSym Dminushalf( np );
     for( Int_t ip= 0; ip < np; ip++ ) {
-      D(ip,ip)= heigenvalues[ip];
-      Dhalf(ip,ip)= sqrt(heigenvalues[ip]);
+      D(ip,ip)= Heigenvalues[ip];
+      Dhalf(ip,ip)= sqrt(Heigenvalues[ip]);
       Dminushalf(ip,ip)= 1.0/Dhalf(ip,ip);
     }
     TVectorD q= Dminushalf*UhT*h*y;
     TVectorD pp= Uh*Dminushalf*q;
     cout << "RooUnfoldBasisSplines::Unfold: eigenvalues of H" << endl;
-    heigenvalues.Print();
+    Heigenvalues.Print();
     cout << "RooUnfoldBasisSplines::Unfold: unreg. solution q:" << endl;
     q.Print();
     cout << "RooUnfoldBasisSplines::Unfold: unreg. solution p:" << endl;
@@ -249,9 +253,6 @@ void RooUnfoldBasisSplines::Unfold() {
     UcpT.T();
     TMatrixDSym S( np );
     for( Int_t ip= 0; ip < np; ip++ ) {
-      if( cpeigenvalues[ip] < 1.0e-8 ) {
-	cpeigenvalues[ip]= 0.0;
-      }
       S(ip,ip)= cpeigenvalues[ip];
     }
     cout << "RooUnfoldBasisSplines::Unfold: diagonal curvature matrix:" << endl;
@@ -317,10 +318,10 @@ Int_t RooUnfoldBasisSplines::findM0noise( const TVectorD& bins,
 					  Double_t& opttau,
 					  Int_t maxiter ) {
   Int_t m0= npstart;
+  Int_t m0final= 0;
   for( Int_t iiter= 0; iiter < maxiter; iiter++ ) {
     TVectorD cppos= makeControlpoints( bins, m0 );
     TMatrixD B= makeBasisSplineMatrix( bins, cppos );
-    TMatrixDSym C= makeCurvatureMatrix( m0 );
     TMatrixD AB= _resm*B;
     TMatrixD ABT( AB );
     ABT.T();
@@ -329,6 +330,8 @@ Int_t RooUnfoldBasisSplines::findM0noise( const TVectorD& bins,
     H.SimilarityT( AB );
     TVectorD Heigenvalues( m0 );
     TMatrixD Uh= H.EigenVectors( Heigenvalues );
+    Double_t mineigenvalue= Heigenvalues.Min();
+    if( mineigenvalue < 0.0 ) Heigenvalues-= 2.0*mineigenvalue;
     TMatrixD UhT( Uh );
     UhT.T();
     TMatrixDSym Dminushalf( m0 );
@@ -336,7 +339,8 @@ Int_t RooUnfoldBasisSplines::findM0noise( const TVectorD& bins,
       Dminushalf(ip,ip)= 1.0/sqrt(Heigenvalues[ip]);
     }
     TMatrixD UhDminushalfT= Dminushalf*UhT;
-    TMatrixDSym Cp= C.Similarity( UhDminushalfT );
+    TMatrixDSym Cp= makeCurvatureMatrix( m0 );
+    Cp.Similarity( UhDminushalfT );
     TVectorD Cpeigenvalues( m0 );
     TMatrixD Ucp= Cp.EigenVectors( Cpeigenvalues );
     TMatrixD UcpT( Ucp );
@@ -350,14 +354,15 @@ Int_t RooUnfoldBasisSplines::findM0noise( const TVectorD& bins,
     }
     Int_t m0noise= int( m0sum+2.0 );
     opttau= optTau( Cpeigenvalues, std::min(m0noise,m0-1) );
-    if( verbose() >= 2 ) {
-      cout << "Optimal tau, m0, tau from noise in q': " << opttaunoise 
+    if( verbose() >= 1 ) {
+      cout << "RooUnfoldBasisSplines::findM0noise: Optimal tau, m0, tau from noise in q': " << opttaunoise 
 	   << " " << m0noise << " " << opttau << " iteration " << iiter << endl;
     }
+    m0final= m0noise;
     if( m0noise >= m0 ) break;
     m0= m0noise;
   }
-  return m0;
+  return m0final;
 }
 // Helper for numerical solution of tau from noise formula:
 Double_t taufunNoise( Double_t* x, Double_t* par ) {
