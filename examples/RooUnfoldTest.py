@@ -102,7 +102,8 @@ def unfolderFactory( optunf, response, hMeas, BasisSpline_m0=0 ):
     elif "BasisSplines" in optunf:
         # unfold= RooUnfoldBasisSplines( response, hMeas, 1.3e-6, 32 )
         # unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, 32, 2 )
-        unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, BasisSpline_m0, 2 )
+        # unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, BasisSpline_m0, 2 )
+        unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, BasisSpline_m0, 0 )
     return unfold
 
 # Run a test of the unfolding methods:
@@ -283,51 +284,6 @@ def doAllPlots( optunfs= "Bayes SVD TUnfold Invert Reverse BasisSplines" ):
     return
 
 
-
-def testBSplines():
-
-    # optfun= "bw"
-    # bininfo= createBininfo( optfun )
-    # gmean= -1.0
-    # gsigma= 0.05
-    # leff= True
-    # response= train( bininfo, gmean=gmean, gsigma=gsigma, leff=leff,
-    #                  opttfun=optfun, loufl=False )
-    # testfun= TF1( "testbw", "TMath::BreitWigner(x,4.0,1.0)", 0.0, 10.0 )
-    # hTrue, hMeas= generateTest( bininfo, testfun,
-    #                             gmean=gmean, gsigma=gsigma, leff=leff )
-
-    # unfold= RooUnfoldBasisSplines( response, hMeas )
-    unfold= RooUnfoldBasisSplines()
-
-    bins= [ 0.0, 2.0, 4.0, 6.0, 8.0, 10.0 ]
-    cppos= [ 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0 ]
-
-    #tbins= [ transform( x, cppos ) for x in bins ]
-
-    nbins= len(bins)
-    tvbins= TVectorD( nbins )
-    for i in range( nbins ):
-        tvbins[i]= bins[i]
-    np= len(cppos)
-    tvcppos= TVectorD( np )
-    for i in range(np):
-        tvcppos[i]= cppos[i]
-    
-    stepsize= unfold.step( tvbins )
-    print "stepsize: ", stepsize
-    print "transformed bins"
-    for i in range( nbins ):
-        t= unfold.transform( tvbins[i], tvcppos )
-        print t
-
-    tmbfm= unfold.makeBasisSplineMatrix( tvbins, tvcppos )
-    tmbfm.Print()
-
-    # bfm= makeBfm( tbins, np )
-
-
-    return
 
     
 
