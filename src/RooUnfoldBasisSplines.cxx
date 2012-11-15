@@ -148,49 +148,37 @@ void RooUnfoldBasisSplines::Unfold() {
   // Initial number of control points:
   Int_t np= _m0;
   if( _m0 == 0 ) {
-    np= nbint;
-    _m0= nbint;
+    np= nbint+2;
   }
   if( np > nbinm ) {
     cerr << "RooUnfoldBasisSplines::Unfold: number of control points " << np
 	 << " > number of measured points " << nbinm << endl;
     return;
   }
+  if( np < nbint+2 ) {
+    cerr << "RooUnfoldBasisSplines::Unfold: number of control points " << np
+	 << " < number of truth bins+2 " << nbint+2
+	 << ", error matrix may be unreliable" << endl;
+  }
 
   // Test and possibly set regularisations:
   Int_t npeff= np;
   if( _iauto > 0 ) {
-
-    // Double_t opttautest;
-    // Int_t m0noisetest= findM0noise( bins, y, Vinv, np, opttautest, 1 );
-
     TVectorD cpeigenvalues;
     Double_t opttau= findTauFromNoise( bins, y, Vinv, np, cpeigenvalues );
-
     if( verbose() >= 1 ) {
+      npeff= m0FromTau( opttau, cpeigenvalues, 0 );
       cout << "RooUnfoldBasisSplines::Unfold: recommended tau from noise: " 
 	   << opttau;
       cout << ", eff. np " << npeff << endl;
     }
     if( _iauto == 2 ) _tau= opttau;
-    // if( _iauto == 2 ) {
-    //   _m0= m0noisetest;
-    //   np= m0noisetest;
-    // }
-    // if( _iauto == 3 ) {
-    //   _tau= opttautest;
-    // }    
-    // if( _iauto == 4 ) {
-    //   _m0= m0noisetest;
-    //   np= m0noisetest;
-    //   _tau= opttautest;
-    // }
     npeff= m0FromTau( _tau, cpeigenvalues, 0 );
   }
   if( verbose() >= 1 ) {
-    cout << "RooUnfoldBasisSplines::Unfold: iauto= " << _iauto
-	 << ", m0 and tau values: " 
-	 << _m0 << ", " << _tau << ", eff. np " << npeff << endl;
+    cout << "RooUnfoldBasisSplines::Unfold: iauto: " << _iauto
+	 << ", np and tau values: " 
+	 << np << ", " << _tau << ", eff. np: " << npeff << endl;
   }
   
   // Control point values:
@@ -210,49 +198,48 @@ void RooUnfoldBasisSplines::Unfold() {
   TMatrixDSym H( Vinv );
   H.SimilarityT( AB );
   TMatrixDSym ABC= H + _tau*C;
-
-  // Use explicit SVD inversion
-  // TMatrixDSym ABCinv( ABC );
-  // ABCinv.Invert();
-  //  Double_t tol= 1.0e-13;
+  // Use explicit SVD inversion:
   TDecompSVD ABCsvd( ABC, _tol );
-  ABCsvd.Decompose();
   TMatrixD ABCsvdinv= ABCsvd.Invert();
   TVectorD s= ABCsvd.GetSig();
   Int_t nrejsvd= 0;
-  for( Int_t i= 0; i < np; i++ ) {
-    if( s[i] < _tol*s[0] ) {
+  for( Int_t ip= 0; ip < np; ip++ ) {
+    if( s[ip] < _tol*s[0] ) {
       nrejsvd++;
-      cout << "Reject singular value " << i << " " << s[i] << endl;
+      if( verbose() >= 2 ) {
+	cout << "RooUnfoldBasisSplines::Unfold:Reject singular value " 
+	     << ip << " " << s[ip] << endl;
+      }
     }
   }
   TMatrixDSym ABCinv( np, ABCsvdinv.GetMatrixArray() );
-
   TMatrixD ABCinvh= ABCinv*h;
   TVectorD p= ABCinvh*y;
   TVectorD t= B*p;
   _rec.ResizeTo( nbint );
   _rec= t;
-  if( verbose() >= 1 ) {
-    TVectorD delta= y-AB*p;
-    Double_t chisq= Vinv.Similarity( delta );
-    Double_t chisqcurv= _tau*C.Similarity( p );
-    Double_t chisqtot= chisq+chisqcurv;
-    Int_t ndof= nbinm-np;
-    cout << "RooUnfoldBasisSplines::Unfold: Chi^2 of solution=";
-    cout.precision(2);
-    cout << std::fixed << std::setw(7) << chisqtot;
-    cout << ", from curvature " << std::setw(7) << chisqcurv;
-    cout << ", for " << ndof << " d.o.f." << endl;
-    cout << "P(chi^2)=" << std::scientific << std::setw(9) 
-	 << TMath::Prob( chisq, ndof ) << endl;
-    ndof= nbinm-np+nrejsvd;
-    cout << "SVD d.o.f.: " << ndof << ", P(chi^2)=" << std::scientific 
+  TVectorD delta= y-AB*p;
+  Double_t chisq= Vinv.Similarity( delta );
+  Double_t chisqcurv= _tau*C.Similarity( p );
+  Int_t ndof= nbinm-np;
+  cout << "RooUnfoldBasisSplines::Unfold: Chi^2 of solution=";
+  cout.precision(2);
+  cout << std::fixed << std::setw(7) << chisq;
+  cout << ", from curvature " << std::setw(7) << chisqcurv;
+  cout << ", for " << ndof << " d.o.f." << endl;
+  cout << "P(chi^2)=" << std::scientific << std::setw(9) 
+       << TMath::Prob( chisq, ndof ) << endl;
+  if( _iauto > 0 and _tau > 0.0 ) {
+    ndof= nbinm-npeff;
+    cout << "Eff. d.o.f.: " << ndof << ", P(chi^2)=" << std::scientific 
 	 << std::setw(9) << TMath::Prob( chisq, ndof ) << endl;
-    cout << std::fixed;
   }
+  ndof= nbinm-np+nrejsvd;
+  cout << "SVD d.o.f.: " << ndof << ", P(chi^2)=" << std::scientific 
+       << std::setw(9) << TMath::Prob( chisq, ndof ) << endl;
+  cout << std::fixed;
   if( verbose() >= 2 ) {
-    cout << "RooUnfoldBasisSplines::Unfold: reg. solution inversion solution p:"
+    cout << "RooUnfoldBasisSplines::Unfold: regularised inversion solution p:"
 	 << endl;
     p.Print();
   }
@@ -260,7 +247,7 @@ void RooUnfoldBasisSplines::Unfold() {
   // Covariance matrices of control point values and of unfolding result:
   // TMatrixDSym covp= V.Similarity( ABCinvh );
   TMatrixDSym covp( ABCinv );
-  _cov.ResizeTo ( nbint, nbint );
+  _cov.ResizeTo( nbint, nbint );
   _cov= covp.Similarity( B );
 
   // Set state:
@@ -294,7 +281,6 @@ void RooUnfoldBasisSplines::Unfold() {
     q.Print();
     cout << "RooUnfoldBasisSplines::Unfold: unreg. solution p:" << endl;
     pp.Print();
-
     // Reg. solution with eigenvalues of curvature matrix:
     TMatrixD UhDminushalfT= Dminushalf*UhT;
     TMatrixDSym Cp= C.Similarity( UhDminushalfT );
@@ -324,7 +310,6 @@ void RooUnfoldBasisSplines::Unfold() {
     cout << endl;
     cout << "RooUnfoldBasisSplines::Unfold: reg. factors sum: " 
 	 << regfsum << endl;
-
     TMatrixD Q= UcpT*Dminushalf*UhT*h;
     TVectorD qp= Q*y;
     TVectorD qpp= UnitplustauSinv*qp;
@@ -335,22 +320,6 @@ void RooUnfoldBasisSplines::Unfold() {
     cout << "RooUnfoldBasisSplines::Unfold: reg. eigenvalue solution p:" 
 	 << endl;
     ppp.Print();
-    // Optimal m0 and tau:
-    Double_t m0q= 0.0;
-    for( Int_t ip= 0; ip < np; ip++ ) {
-      if( fabs(q[ip]) > 2.0 ) m0q+= 1.0;
-    }
-    Double_t opttau= optTau( cpeigenvalues, m0q );
-    cout << "RooUnfoldBasisSplines::Unfold: optimal m0 and tau from unreg. solution q: " << m0q << " " << opttau << endl;
-    Double_t opttaunoise= optTauNoise( cpeigenvalues, qp );
-    Double_t m0sum= 0.0;
-    for( Int_t ip= 0; ip < np; ip++ ) {
-      m0sum+= 1.0/(1.0+opttaunoise*cpeigenvalues[ip]);
-    }
-    Int_t m0noise= int( m0sum+2.0 );
-    cout << "RooUnfoldBasisSplines::Unfold: optimal tau and m0 from noise in unreg. solution q': " 
-	 << opttaunoise 
-	 << " " << m0noise << endl;
   }
 
   // The End:
@@ -358,12 +327,9 @@ void RooUnfoldBasisSplines::Unfold() {
 
 }
 
-// Iterative determination of number of control points from
-// "noise" in unreg. solution q' from eigenvalues of C.
-// See "Note on Blobels unfolding method", G. Cowan, 2/1998
-// (www.desy.de/~blobel/runcowan.ps)
-
-
+// Determination of number of control points from "noise" in 
+// unreg. solution q' from eigenvalues of C.  See "Note on Blobels 
+// unfolding method", G. Cowan, 2/1998 (www.desy.de/~blobel/runcowan.ps)
 Double_t RooUnfoldBasisSplines::findTauFromNoise( const TVectorD& bins, 
 						  const TVectorD& y, 
 						  const TMatrixDSym& Vinv, 
@@ -399,24 +365,23 @@ Double_t RooUnfoldBasisSplines::findTauFromNoise( const TVectorD& bins,
   Double_t opttaunoise= optTauNoise( Cpeigenvalues, qp );
   Int_t m0noise= m0FromTau( opttaunoise, Cpeigenvalues );
   Double_t opttau= optTau( Cpeigenvalues, std::min(m0noise,np-1) );
-  if( verbose() >= 1 ) {
+  if( verbose() >= 2 ) {
     cout << "RooUnfoldBasisSplines::findTauFromNoise: Optimal tau, m0, tau from noise in q': " << opttaunoise 
 	 << " " << m0noise << " " << opttau << endl;
   }
   return opttau;
 }
-
 Int_t RooUnfoldBasisSplines::m0FromTau( Double_t opttaunoise, 
 					const TVectorD& Cpeigenvalues,
 					Int_t offset ) {
-  Double_t m0sum= 0.0;
+  Double_t m0sum( offset );
   for( Int_t ip= 0; ip < Cpeigenvalues.GetNoElements(); ip++ ) {
     m0sum+= 1.0/(1.0+opttaunoise*Cpeigenvalues[ip]);
   }
-  Int_t m0noise= int( m0sum+offset );
+  Int_t m0noise( m0sum );
   return m0noise;
 }
-
+// Iterative version of tau/m0 optimisation:
 Int_t RooUnfoldBasisSplines::findM0noise( const TVectorD& bins, 
 					  const TVectorD& y, 
 					  const TMatrixDSym& Vinv, 
