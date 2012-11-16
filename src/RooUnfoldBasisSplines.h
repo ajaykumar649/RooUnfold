@@ -39,6 +39,7 @@ public:
   RooUnfoldBasisSplines( const TString& name, const TString& title );
   RooUnfoldBasisSplines( const RooUnfoldBasisSplines& );
   RooUnfoldBasisSplines( const RooUnfoldResponse* res, const TH1* meas, 
+			 Int_t nrebin=1,
 			 const Double_t tau=1.0e-8, const Int_t m0=0,
 			 const Int_t iauto=0,
 			 const Double_t tol=1.0e-12,
@@ -74,11 +75,14 @@ public:
 		     Int_t npstart, 
 		     Double_t& opttau,
 		     Int_t maxiter=10 );
-  Double_t findTauFromNoise( const TVectorD& bins, const TVectorD& y, 
+  // Double_t findTauFromNoise( const TVectorD& bins, 
+  Double_t findTauFromNoise( const TMatrixD& AB, 
+			     const TVectorD& y, 
 			     const TMatrixDSym& Vinv, 
 			     Int_t np, TVectorD& );
   Int_t m0FromTau( Double_t opttaunoise, const TVectorD& Cpeigenvalues,
 		   Int_t offset=1 );
+  TMatrixD makeRebinMatrix( Int_t nbin, Int_t nrebin );
 
 protected:
 
@@ -94,6 +98,7 @@ private:
 
   // Instance variables:
   TMatrixD _resm;
+  Int_t _nrebin;
   Double_t _tau;
   Int_t _m0;
   Int_t _iauto;

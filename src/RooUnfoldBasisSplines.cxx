@@ -36,14 +36,15 @@ RooUnfoldBasisSplines::RooUnfoldBasisSplines( const RooUnfoldBasisSplines& rhs )
 }
 RooUnfoldBasisSplines::RooUnfoldBasisSplines( const RooUnfoldResponse* res, 
 					      const TH1* meas,
+					      Int_t nrebin,
 					      const Double_t tau,
 					      const Int_t m0,
 					      const Int_t iauto,
 					      const Double_t tol,
 					      const char* name, 
 					      const char* title )
-  : RooUnfold( res, meas, name, title ), _tau(tau), _m0(m0), 
-    _iauto(iauto), _tol(tol) {
+  : RooUnfold( res, meas, name, title ), _nrebin(nrebin), _tau(tau), 
+    _m0(m0), _iauto(iauto), _tol(tol) {
   Init();
 }
 RooUnfoldBasisSplines::RooUnfoldBasisSplines() : RooUnfold() {
@@ -161,11 +162,17 @@ void RooUnfoldBasisSplines::Unfold() {
 	 << ", error matrix may be unreliable" << endl;
   }
 
+  // Control point values, basis spline and curvature matrices:
+  TVectorD cppos= makeControlpoints( bins, np );
+  TMatrixD B= makeBasisSplineMatrix( bins, cppos );
+  TMatrixDSym C= makeCurvatureMatrix( np );
+  TMatrixD AB= _resm*B;
+
   // Test and possibly set regularisations:
   Int_t npeff= np;
   if( _iauto > 0 ) {
     TVectorD cpeigenvalues;
-    Double_t opttau= findTauFromNoise( bins, y, Vinv, np, cpeigenvalues );
+    Double_t opttau= findTauFromNoise( AB, y, Vinv, np, cpeigenvalues );
     if( verbose() >= 1 ) {
       npeff= m0FromTau( opttau, cpeigenvalues, 0 );
       cout << "RooUnfoldBasisSplines::Unfold: recommended tau from noise: " 
@@ -181,17 +188,9 @@ void RooUnfoldBasisSplines::Unfold() {
 	 << np << ", " << _tau << ", eff. np: " << npeff << endl;
   }
   
-  // Control point values:
-  TVectorD cppos= makeControlpoints( bins, np );
-
-  // Calculate basis spline and curvature matrices:
-  TMatrixD B= makeBasisSplineMatrix( bins, cppos );
-  TMatrixDSym C= makeCurvatureMatrix( np );
-
   // Solution for control point values p and unfolded bin contents t
   // from LLS between splined truth x response and measured distribution.
   // AB is product of response matrix with basis spline matrix:
-  TMatrixD AB= _resm*B;
   TMatrixD ABT( AB );
   ABT.T();
   TMatrixD h= ABT*Vinv;
@@ -216,6 +215,11 @@ void RooUnfoldBasisSplines::Unfold() {
   TMatrixD ABCinvh= ABCinv*h;
   TVectorD p= ABCinvh*y;
   TVectorD t= B*p;
+
+  TMatrixD rbm= makeRebinMatrix( nbint, _nrebin );
+  TVectorD trb= rbm*t;
+  trb.Print();
+
   _rec.ResizeTo( nbint );
   _rec= t;
   TVectorD delta= y-AB*p;
@@ -327,17 +331,30 @@ void RooUnfoldBasisSplines::Unfold() {
 
 }
 
+
+// Rebinning matrix:
+TMatrixD RooUnfoldBasisSplines::makeRebinMatrix( Int_t nbin, 
+						 Int_t nrebin ) {
+  Int_t nbinrb= nbin/nrebin;
+  TMatrixD rbm( nbinrb, nbin );
+  for( Int_t ibinrb= 0; ibinrb < nbinrb; ibinrb++ ) {
+    for( Int_t i= ibinrb*nrebin; i < (ibinrb+1)*nrebin; i++ ) {
+      rbm(ibinrb,i)= 1.0;
+    }
+  }
+  return rbm;
+}
+
+
 // Determination of number of control points from "noise" in 
 // unreg. solution q' from eigenvalues of C.  See "Note on Blobels 
 // unfolding method", G. Cowan, 2/1998 (www.desy.de/~blobel/runcowan.ps)
-Double_t RooUnfoldBasisSplines::findTauFromNoise( const TVectorD& bins, 
+// Double_t RooUnfoldBasisSplines::findTauFromNoise( const TVectorD& bins, 
+Double_t RooUnfoldBasisSplines::findTauFromNoise( const TMatrixD& AB, 
 						  const TVectorD& y, 
 						  const TMatrixDSym& Vinv, 
 						  Int_t np,
 						  TVectorD& Cpeigenvalues ) {
-  TVectorD cppos= makeControlpoints( bins, np );
-  TMatrixD B= makeBasisSplineMatrix( bins, cppos );
-  TMatrixD AB= _resm*B;
   TMatrixD ABT( AB );
   ABT.T();
   TMatrixD h= ABT*Vinv;
