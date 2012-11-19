@@ -114,6 +114,61 @@ void RooUnfoldBasisSplines::SubtractFakes() {
   }
 }
 
+// Overrides to get/set tau:
+void RooUnfoldBasisSplines::SetRegParm( Double_t tau ) {
+  _tau= tau;
+  return;
+}
+Double_t RooUnfoldBasisSplines::GetRegParm() const {
+  return _tau;
+}
+
+// Overrides for printing and returning of unfolded:
+void RooUnfoldBasisSplines::PrintTable( std::ostream& o, const TH1* hTrue, 
+					ErrorTreatment withError ) {
+  // Prints entries from truth, measured, and reconstructed data for each bin.
+  const TH1* hReco= Hreco( withError );
+  if( !_unfolded ) return;
+  TH1* hTrueclone= (TH1*) hTrue->Clone();
+  const TH1* hTruerebin= hTrueclone->Rebin( _nrebin, hTrueclone->GetName() );
+  Double_t chi_squ= -999.0;
+  if( hTrue && ( withError==kCovariance || withError==kCovToy ) ) {
+    chi_squ= Chi2( hTruerebin, withError );
+  }
+  TH1* truthresponseclone= (TH1*) response()->Htruth()->Clone();
+  const TH1* truthresponse= truthresponseclone->Rebin( _nrebin, truthresponseclone->GetName() );
+  RooUnfold::PrintTable( o, truthresponse, response()->Hmeasured(), 
+			 hTruerebin, Hmeasured(), hReco,
+			 _nm, _nt, _overflow, withError, chi_squ );
+  return;
+}
+TH1* RooUnfoldBasisSplines::Hreco( ErrorTreatment withError ) {
+    /*Creates reconstructed distribution. Error calculation varies by withError:
+    0: No errors
+    1: Errors from the square root of the diagonals of the covariance matrix given by the unfolding
+    2: Errors from the square root of of the covariance matrix given by the unfolding
+    3: Errors from the square root of the covariance matrix from the variation of the results in toy MC tests
+    */
+  TH1* reco= (TH1*) _res->Htruth()->Clone( GetName() ); 
+  reco= reco->Rebin( _nrebin );
+  reco->Reset();
+  reco->SetTitle (GetTitle());
+  if( !UnfoldWithErrors( withError ) ) withError= kNoError;
+  if( !_unfolded ) return reco;
+  for( Int_t i= 0; i < _nt; i++ ) {
+    Int_t j= RooUnfoldResponse::GetBin( reco, i, _overflow );
+    reco->SetBinContent( j, _rec(i) );
+    if( withError==kErrors ) {
+      reco->SetBinError( j, sqrt( fabs( _variances(i) ) ) );
+    } else if( withError==kCovariance ) {
+      reco->SetBinError( j, sqrt( fabs( _cov(i,i) ) ) );
+    } else if( withError==kCovToy ) {
+      reco->SetBinError( j, sqrt( fabs( _err_mat(i,i) ) ) );
+    }
+  }
+  return reco;
+}
+
 // Do the unfolding steps:
 void RooUnfoldBasisSplines::Unfold() {
 
@@ -149,16 +204,17 @@ void RooUnfoldBasisSplines::Unfold() {
   // Initial number of control points:
   Int_t np= _m0;
   if( _m0 == 0 ) {
-    np= nbint+2;
+    // np= Int_t( nbint/_nrebin*1.5 );
+    np= nbint/_nrebin+2;
   }
   if( np > nbinm ) {
     cerr << "RooUnfoldBasisSplines::Unfold: number of control points " << np
 	 << " > number of measured points " << nbinm << endl;
     return;
   }
-  if( np < nbint+2 ) {
+  if( np < nbint/_nrebin + 2 ) {
     cerr << "RooUnfoldBasisSplines::Unfold: number of control points " << np
-	 << " < number of truth bins+2 " << nbint+2
+	 << " < number of truth bins/nrebin + 2 " << nbint/_nrebin+2
 	 << ", error matrix may be unreliable" << endl;
   }
 
@@ -168,7 +224,7 @@ void RooUnfoldBasisSplines::Unfold() {
   TMatrixDSym C= makeCurvatureMatrix( np );
   TMatrixD AB= _resm*B;
 
-  // Test and possibly set regularisations:
+  // Test and possibly set regularisation parameter:
   Int_t npeff= np;
   if( _iauto > 0 ) {
     TVectorD cpeigenvalues;
@@ -176,7 +232,7 @@ void RooUnfoldBasisSplines::Unfold() {
     if( verbose() >= 1 ) {
       npeff= m0FromTau( opttau, cpeigenvalues, 0 );
       cout << "RooUnfoldBasisSplines::Unfold: recommended tau from noise: " 
-	   << opttau;
+	   << std::scientific << std::setw(9) << opttau;
       cout << ", eff. np " << npeff << endl;
     }
     if( _iauto == 2 ) _tau= opttau;
@@ -185,7 +241,8 @@ void RooUnfoldBasisSplines::Unfold() {
   if( verbose() >= 1 ) {
     cout << "RooUnfoldBasisSplines::Unfold: iauto: " << _iauto
 	 << ", np and tau values: " 
-	 << np << ", " << _tau << ", eff. np: " << npeff << endl;
+	 << np << ", " << std::scientific << std::setw(9) << _tau 
+	 << ", eff. np: " << npeff << endl;
   }
   
   // Solution for control point values p and unfolded bin contents t
@@ -216,12 +273,24 @@ void RooUnfoldBasisSplines::Unfold() {
   TVectorD p= ABCinvh*y;
   TVectorD t= B*p;
 
+  // Rebin solution:
   TMatrixD rbm= makeRebinMatrix( nbint, _nrebin );
   TVectorD trb= rbm*t;
-  trb.Print();
+  _rec.ResizeTo( nbint/_nrebin );
+  _rec= trb;
 
-  _rec.ResizeTo( nbint );
-  _rec= t;
+  // Covariance matrices of control point values and of unfolding result:
+  TMatrixDSym covp( ABCinv );
+  TMatrixDSym covt= covp.Similarity( B );
+  _nt= nbint/_nrebin;
+  _cov.ResizeTo( _nt, _nt );
+  _cov= covt.Similarity( rbm );
+  _variances.ResizeTo( _nt );
+  for( Int_t it= 0; it < _nt; it++ ) {
+    _variances(it)= _cov(it,it);
+  }
+
+  // Chi^2 values:
   TVectorD delta= y-AB*p;
   Double_t chisq= Vinv.Similarity( delta );
   Double_t chisqcurv= _tau*C.Similarity( p );
@@ -248,15 +317,10 @@ void RooUnfoldBasisSplines::Unfold() {
     p.Print();
   }
 
-  // Covariance matrices of control point values and of unfolding result:
-  // TMatrixDSym covp= V.Similarity( ABCinvh );
-  TMatrixDSym covp( ABCinv );
-  _cov.ResizeTo( nbint, nbint );
-  _cov= covp.Similarity( B );
-
   // Set state:
   _unfolded= true;
   _haveCov= true;
+  _haveErrors= true;
 
   // Eigenvalue solutions, only if verbose>1 since inversion solution
   // is equivalent.  The eigenvalue solutions give more information
@@ -331,7 +395,6 @@ void RooUnfoldBasisSplines::Unfold() {
 
 }
 
-
 // Rebinning matrix:
 TMatrixD RooUnfoldBasisSplines::makeRebinMatrix( Int_t nbin, 
 						 Int_t nrebin ) {
@@ -344,7 +407,6 @@ TMatrixD RooUnfoldBasisSplines::makeRebinMatrix( Int_t nbin,
   }
   return rbm;
 }
-
 
 // Determination of number of control points from "noise" in 
 // unreg. solution q' from eigenvalues of C.  See "Note on Blobels 
@@ -522,7 +584,7 @@ TVectorD RooUnfoldBasisSplines::makeControlpoints( const TVectorD& bins,
   return cppos;
 }
 
-// Return error matrix of unfolded (calculation is done in unfold):
+// Make error matrix of unfolded (calculation is done in unfold):
 void RooUnfoldBasisSplines::GetCov() {
   return;
 }

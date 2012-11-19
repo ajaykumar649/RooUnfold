@@ -84,6 +84,16 @@ public:
 		   Int_t offset=1 );
   TMatrixD makeRebinMatrix( Int_t nbin, Int_t nrebin );
 
+
+  // Overrides from RooUnfold:
+  virtual void PrintTable( std::ostream& o, const TH1* hTrue, 
+			   ErrorTreatment withError );
+  virtual TH1* Hreco( ErrorTreatment withError );
+  // Set/get Regularisation Parameter tau:
+  virtual void SetRegParm( Double_t tau );
+  virtual Double_t GetRegParm() const; 
+
+
 protected:
 
   virtual void Unfold();
