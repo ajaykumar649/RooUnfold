@@ -92,12 +92,14 @@ class Trainer:
         txt+= ", o/u-flow: " + str(loufl) + ", function: " + self.optfun
         print txt
         # Create response matrix object:
-        response= RooUnfoldResponse( self.bininfo["mbins"],
-                                     self.bininfo["mlo"],
-                                     self.bininfo["mhi"],
-                                     self.bininfo["tbins"],
-                                     self.bininfo["tlo"],
-                                     self.bininfo["thi"] )
+        bininfo= self.bininfo.create( self.optfun )
+        response= RooUnfoldResponse( bininfo["mbins"],
+                                     bininfo["mlo"],
+                                     bininfo["mhi"],
+                                     # bininfo["tbins"],
+                                     bininfo["tbins"]*bininfo["nrebin"],
+                                     bininfo["tlo"],
+                                     bininfo["thi"] )
         response.UseOverflow( loufl )
         for i in xrange( 100000 ):
             xt, x= measurement.generate( self.trainfun )
@@ -106,7 +108,6 @@ class Trainer:
             else:
                 response.Miss( xt )
         return response
-
 
 class Tester:
 
@@ -127,27 +128,28 @@ class Tester:
         return hTrue, hMeas
 
     def makeTestHistos( self ):
+        bininfo= self.bininfo.create( self.optfun )
         hTrue= TH1D( "true", "Test Truth",
-                     self.bininfo["tbins"],
-                     self.bininfo["tlo"],
-                     self.bininfo["thi"] )
+                     # self.bininfo["tbins"],
+                     bininfo["tbins"]*bininfo["nrebin"],
+                     bininfo["tlo"],
+                     bininfo["thi"] )
         hMeas= TH1D( "meas", "Test Measured",
-                     self.bininfo["mbins"],
-                     self.bininfo["mlo"],
-                     self.bininfo["mhi"] )
+                     bininfo["mbins"],
+                     bininfo["mlo"],
+                     bininfo["mhi"] )
         return hTrue, hMeas
-
-
 
 class UnfoldTester:
 
-    def __init__( self, optunf ):
+    def __init__( self, optunf, nrebin=1 ):
         optunfs= [ "Bayes", "SVD", "TUnfold", "Invert", "Reverse",
                    "BasisSplines" ]
         if not optunf in optunfs:
             txt= "UnfoldTester: Unfolding option " + optunf + " not recognised" 
             raise ValueError( txt )
         self.optunf= optunf
+        self.nrebin= nrebin
         return
 
     # Create unfolder object:
@@ -160,8 +162,8 @@ class UnfoldTester:
             unfold= RooUnfoldSvd( response, hMeas )
         elif "TUnfold" in self.optunf:
             # TUnfold with fixed regularisation tau=0.002
-            unfold= RooUnfoldTUnfold( response, hMeas, 0.002 )
-            # unfold= RooUnfoldTUnfold( response, hMeas )
+            # unfold= RooUnfoldTUnfold( response, hMeas, 0.002 )
+            unfold= RooUnfoldTUnfold( response, hMeas )
         elif "Invert" in self.optunf:
             unfold= RooUnfoldInvert( response, hMeas )
         elif "Reverse" in self.optunf:
@@ -169,7 +171,8 @@ class UnfoldTester:
             unfold= RooUnfoldBayes( response, hMeas, 1 )
         elif "BasisSplines" in self.optunf:
             # BasisSplines with automatic tau determination
-            unfold= RooUnfoldBasisSplines( response, hMeas, 0.0, BasisSpline_m0, 2 )
+            unfold= RooUnfoldBasisSplines( response, hMeas, self.nrebin,
+                                           0.0, BasisSpline_m0, 2 )
         return unfold
 
     # Run a test of the unfolding methods:
@@ -190,6 +193,7 @@ class UnfoldTester:
 
 # Create functions for training and testing:
 def createFunction( bininfo, optfun, name ):
+    bininfo= bininfo.create( optfun )
     if "exp" in optfun:
         fun= TF1( name, "exp(-x/3.0)",
                   bininfo["tlo"], bininfo["thi"] )
@@ -216,36 +220,40 @@ def createFunction( bininfo, optfun, name ):
     return fun
 
 # Provide binning for different test functions:
-def createBininfo( optfun ):
-    if "exp" in optfun:
-        bininfo= { "tbins": 10,
-                   "tlo": 0.0,
-                   "thi": 10.0,
-                   "mbins": 20,
-                   "mlo": -2.0,
-                   "mhi": 10.0 }
-    elif "gaus" in optfun:
-        bininfo= { "tbins": 10,
-                   "tlo": 0.0,
-                   "thi": 10.0,
-                   "mbins": 20,
-                   "mlo": -2.0,
-                   "mhi": 10.0 }
-    elif "bw" in optfun:
-        bininfo= { "tbins": 40,
-                   "tlo": 0.0,
-                   "thi": 10.0,
-                   "mbins": 80,
-                   "mlo": -2.0,
-                   "mhi": 10.0 }
-    elif "blobel" in optfun:
-        bininfo= { "tbins": 12,
-                   "tlo": 0.0,
-                   "thi": 2.0,
-                   "mbins": 40,
-                   "mlo": 0.0,
-                   "mhi": 2.0 }
-    return bininfo
+class BinInfo:
+    def __init__( self, nrebin=1 ):
+        self.nrebin= nrebin
+    def create( self, optfun ):
+        if "exp" in optfun:
+            bininfo= { "tbins": 10,
+                       "tlo": 0.0,
+                       "thi": 10.0,
+                       "mbins": 20,
+                       "mlo": -2.0,
+                       "mhi": 10.0 }
+        elif "gaus" in optfun:
+            bininfo= { "tbins": 10,
+                       "tlo": 0.0,
+                       "thi": 10.0,
+                       "mbins": 20,
+                       "mlo": -2.0,
+                       "mhi": 10.0 }
+        elif "bw" in optfun:
+            bininfo= { "tbins": 40,
+                       "tlo": 0.0,
+                       "thi": 10.0,
+                       "mbins": 80,
+                       "mlo": -2.0,
+                       "mhi": 10.0 }
+        elif "blobel" in optfun:
+            bininfo= { "tbins": 12,
+                       "tlo": 0.0,
+                       "thi": 2.0,
+                       "mbins": 40,
+                       "mlo": 0.0,
+                       "mhi": 2.0 }
+        bininfo["nrebin"]= self.nrebin
+        return bininfo
 
 # Create text for histo titles:
 def funtxts( opttfun, optfun, leff, loufl ):
@@ -261,6 +269,8 @@ def funtxts( opttfun, optfun, leff, loufl ):
         funtxt= "Exp tau=3"
     elif "bw" in optfun:
         funtxt= "B-W mu=4, s.d.=1"
+    elif "gaus" in optfun:
+        funtxt= "Gaus mu=5, s.d.=2.5"
     elif "blobel" in optfun:
         funtxt= "Blobel"
     if leff:
@@ -275,7 +285,13 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
 
     if opttfun == "":
         opttfun= optfun
-    bininfo= createBininfo( optfun )
+
+    nrebin= 4
+    if optunf == "BasisSplines":
+        bininfo= BinInfo( nrebin )
+    else:
+        bininfo= BinInfo()
+
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
 
     global histos, canv
@@ -285,17 +301,22 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
     canv.Divide( 1, 3 )
 
     trainer= Trainer( bininfo, opttfun )
-    # trainer= BTrainer( bininfo, opttfun )
-
     tester= Tester( bininfo, optfun )
-    unfoldtester= UnfoldTester( optunf )
-    for sigma, ipad in [ [ 0.1, 1 ], [ 0.3, 2 ], [ 1.0, 3 ] ]:
+
+    if optunf == "BasisSplines":
+        unfoldtester= UnfoldTester( optunf, nrebin )
+    else:
+        unfoldtester= UnfoldTester( optunf )
+
+    hbininfo= bininfo.create( optfun )
+    dx= hbininfo["mhi"]
+    for sigma, ipad in [ [ 0.01*dx, 1 ], [ 0.03*dx, 2 ], [ 0.1*dx, 3 ] ]:
         hPulls= TProfile( "pulls",
                           optunf + ", smear mu, s.d.= " +
                           str(gmean) + ", " + str(sigma) +
                           ", train: " + funttxt + ", test: " + funtxt +
                           ", " + str(ntest) + " tests",
-                          bininfo["tbins"], bininfo["tlo"], bininfo["thi"] )
+                          hbininfo["tbins"], hbininfo["tlo"], hbininfo["thi"] )
         hPulls.SetErrorOption( "s" )
         hPulls.SetYTitle( "Thruth reco pull" )
         histos.append( hPulls )
@@ -309,6 +330,8 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
             unfold.PrintTable( cout, hTrue, 2 )
             hReco= unfold.Hreco( 2 )
             nbin= hReco.GetNbinsX()
+            if hbininfo["nrebin"] > 1:
+                hTrue= hTrue.Rebin( nrebin )
             for ibin in range( nbin+1 ):
                 truevalue= hTrue.GetBinContent( ibin )
                 recvalue= hReco.GetBinContent( ibin )
@@ -317,8 +340,8 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
                     pull= ( recvalue - truevalue )/error
                     hPulls.Fill( hReco.GetBinCenter( ibin ), pull )
         canv.cd( ipad )
-        hPulls.SetMinimum( -10.0 )
-        hPulls.SetMaximum( 10.0 )
+        hPulls.SetMinimum( -3.0 )
+        hPulls.SetMaximum( 3.0 )
         hPulls.Draw()
 
     fname= "RooUnfoldTestPulls_" + optunf + "_" + opttfun + "_" + optfun
@@ -330,11 +353,16 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
 
 # Plots with varying smearing resolution:
 def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
-                      loufl=False, gmean=-1.0 ):
+                      loufl=False, gmean=-1.0, nrebin=4 ):
 
     if opttfun == "":
         opttfun= optfun
-    bininfo= createBininfo( optfun )
+
+    if optunf == "BasisSplines":
+        bininfo= BinInfo( nrebin )
+    else:
+        bininfo= BinInfo()
+
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
 
     global hReco, hMeas, hTrue, hPulls, canv, histos
@@ -343,17 +371,24 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     canv.Divide( 1, 3 )
 
     trainer= Trainer( bininfo, opttfun )
-    # trainer= BTrainer( bininfo, opttfun )
-
     tester= Tester( bininfo, optfun )
-    unfoldtester= UnfoldTester( optunf )
-    for sigma, ipad in [ [ 0.1, 1 ], [ 0.3, 2 ], [ 1.0, 3 ] ]:
+
+    if optunf == "BasisSplines":
+        unfoldtester= UnfoldTester( optunf, nrebin )
+    else:
+        unfoldtester= UnfoldTester( optunf )
+    
+    hbininfo= bininfo.create( optfun )
+    dx= hbininfo["mhi"]
+    for sigma, ipad in [ [ 0.01*dx, 1 ], [ 0.03*dx, 2 ], [ 0.1*dx, 3 ] ]:
         measurement= createMeasurement( gmean, sigma, leff, optfun )
         response= trainer.train( measurement, loufl=loufl )
         unfold, hTrue, hMeas= unfoldtester.rununfoldtest( tester,
                                                           measurement,
                                                           response )
         hReco= unfold.Hreco( 2 )
+        if hbininfo["nrebin"] > 1:
+            hTrue= hTrue.Rebin( nrebin )
         histos.append( [ hTrue, hMeas, hReco ] )
         canv.cd( ipad )
         hReco.SetTitle( optunf + ", smear mu, s.d.= " +
