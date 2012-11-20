@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ROOT import gRandom, TH1, TH1D, gROOT, cout
+from ROOT import gRandom, TH1, TH1D, gROOT, cout, TMath
 
 gROOT.LoadMacro( "/home/skluth/unfold/RooUnfold/libRooUnfold.so" )
 
@@ -281,33 +281,29 @@ def funtxts( opttfun, optfun, leff, loufl ):
 
 # Plot pull distributions:
 def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
-               optfun="exp", opttfun="", gmean=-1.0 ):
+               optfun="exp", opttfun="", gmean=-1.0, nrebin=4 ):
 
     if opttfun == "":
         opttfun= optfun
 
-    nrebin= 4
-    if optunf == "BasisSplines":
-        bininfo= BinInfo( nrebin )
-    else:
-        bininfo= BinInfo()
-
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
 
-    global histos, canv
+    global histos, canv, canv2
     histos= []
 
     canv= TCanvas( "canv", "thruth vs reco pulls", 600, 800 )
     canv.Divide( 1, 3 )
-
-    trainer= Trainer( bininfo, opttfun )
-    tester= Tester( bininfo, optfun )
+    canv2= TCanvas( "canv2", "P(chi^2)", 600, 800 )
+    canv2.Divide( 2, 3 )
 
     if optunf == "BasisSplines":
+        bininfo= BinInfo( nrebin )
         unfoldtester= UnfoldTester( optunf, nrebin )
     else:
+        bininfo= BinInfo()
         unfoldtester= UnfoldTester( optunf )
-
+    trainer= Trainer( bininfo, opttfun )
+    tester= Tester( bininfo, optfun )
     hbininfo= bininfo.create( optfun )
     dx= hbininfo["mhi"]
     for sigma, ipad in [ [ 0.01*dx, 1 ], [ 0.03*dx, 2 ], [ 0.1*dx, 3 ] ]:
@@ -320,6 +316,10 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
         hPulls.SetErrorOption( "s" )
         hPulls.SetYTitle( "Thruth reco pull" )
         histos.append( hPulls )
+        hChisq= TH1D( "chisq", "P(chi^2) rec vs truth", 10, 0.0, 1.0 )
+        hChisqm= TH1D( "chisqm", "P(chi^2) measured", 10, 0.0, 1.0 )
+        histos.append( hChisq )
+        histos.append( hChisqm )
         measurement= createMeasurement( gmean, sigma, leff, optfun )        
         response= trainer.train( measurement, loufl=loufl )
         for itest in range( ntest ):
@@ -339,10 +339,24 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
                 if error > 0.0:
                     pull= ( recvalue - truevalue )/error
                     hPulls.Fill( hReco.GetBinCenter( ibin ), pull )
+            chisq= unfold.Chi2( hTrue, 2 )
+            hChisq.Fill( TMath.Prob( chisq, hTrue.GetNbinsX() ) )
+            chisqm= unfold.Chi2measured( hMeas )
+
+            print "Chisq measured:", chisqm
+
+            hChisqm.Fill( TMath.Prob( chisqm,
+                                      hMeas.GetNbinsX()-
+                                      hReco.GetNbinsX() ) )
         canv.cd( ipad )
         hPulls.SetMinimum( -3.0 )
         hPulls.SetMaximum( 3.0 )
         hPulls.Draw()
+        canv2.cd( ipad*2-1 )
+        hChisq.Draw()
+        canv2.cd( ipad*2 )
+        hChisqm.Draw()
+
 
     fname= "RooUnfoldTestPulls_" + optunf + "_" + opttfun + "_" + optfun
     if loufl:
@@ -358,11 +372,6 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     if opttfun == "":
         opttfun= optfun
 
-    if optunf == "BasisSplines":
-        bininfo= BinInfo( nrebin )
-    else:
-        bininfo= BinInfo()
-
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
 
     global hReco, hMeas, hTrue, hPulls, canv, histos
@@ -370,14 +379,14 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     canv= TCanvas( "canv", "feature size plots", 600, 800 )
     canv.Divide( 1, 3 )
 
-    trainer= Trainer( bininfo, opttfun )
-    tester= Tester( bininfo, optfun )
-
     if optunf == "BasisSplines":
+        bininfo= BinInfo( nrebin )
         unfoldtester= UnfoldTester( optunf, nrebin )
     else:
+        bininfo= BinInfo()
         unfoldtester= UnfoldTester( optunf )
-    
+    trainer= Trainer( bininfo, opttfun )
+    tester= Tester( bininfo, optfun )
     hbininfo= bininfo.create( optfun )
     dx= hbininfo["mhi"]
     for sigma, ipad in [ [ 0.01*dx, 1 ], [ 0.03*dx, 2 ], [ 0.1*dx, 3 ] ]:
