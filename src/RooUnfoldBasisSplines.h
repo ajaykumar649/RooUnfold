@@ -92,6 +92,7 @@ public:
   // Set/get Regularisation Parameter tau:
   virtual void SetRegParm( Double_t tau );
   virtual Double_t GetRegParm() const; 
+  Double_t Chi2measured( const TH1* hMeas );
 
 
 protected:

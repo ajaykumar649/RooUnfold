@@ -169,6 +169,33 @@ TH1* RooUnfoldBasisSplines::Hreco( ErrorTreatment withError ) {
   return reco;
 }
 
+
+Double_t RooUnfoldBasisSplines::Chi2measured( const TH1* hMeas ) {
+  TVectorD vReco= Vreco();
+  TMatrixD A= _res->Mresponse();
+  Int_t nbint= A.GetNcols();
+  TMatrixD rbm= makeRebinMatrix( nbint, _nrebin );
+
+  A.T();
+  TMatrixD Arb= rbm*A;
+
+  A.Print();
+  Arb.Print();
+
+  TVectorD yreco= Arb*vReco;
+  Double_t chisq= 0.0;
+  for( Int_t ibin= 0; ibin < _nm; ibin++ ) {
+    Double_t error= RooUnfoldResponse::GetBinError( hMeas, ibin, _overflow );
+    if( error > 0.0 ) {
+      chisq+= pow( (RooUnfoldResponse::GetBinContent( hMeas, ibin, _overflow )
+		    -yreco[ibin])/error, 2 );
+    }
+  }
+  return chisq;
+}
+
+
+
 // Do the unfolding steps:
 void RooUnfoldBasisSplines::Unfold() {
 
