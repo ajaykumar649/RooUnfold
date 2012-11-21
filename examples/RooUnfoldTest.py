@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from ROOT import gRandom, TH1, TH1D, gROOT, cout, TMath
+from ROOT import gRandom, TH1, TH1D, gROOT, cout, TMath, gStyle
 
 gROOT.LoadMacro( "/home/skluth/unfold/RooUnfold/libRooUnfold.so" )
 
@@ -64,9 +64,11 @@ class BlobelMeasurement( Measurement ):
         Measurement.__init__( self, mean, sigma, leff )
         return
     def efficiency( self, x ):
+        x= x/5.0
         return 1.0 - 0.5*(x-1.0)**2
     def transform( self, x ):
-        return x - 0.2*x**2/4.0
+        x= x/5.0
+        return ( x - 0.2*x**2/4.0 )*5.0
 
 def createMeasurement( mean, sigma, leff, opt="" ):
     if "blobel" in opt:
@@ -76,11 +78,10 @@ def createMeasurement( mean, sigma, leff, opt="" ):
 
 class Trainer:
 
-    def __init__( self, bininfo, optfun="exp" ):
-        self.bininfo= bininfo
-        # Set training truth function:
-        self.optfun= optfun
-        self.trainfun= createFunction( bininfo, optfun, "train"+optfun )
+    def __init__( self, bininfo, opttfun, optfun ):
+        self.bininfo= bininfo.create( optfun )
+        self.trainfun= createFunction( self.bininfo, opttfun, "train_"+opttfun )
+        self.opttfun= opttfun
         return
 
     # Training: create response object:
@@ -89,17 +90,15 @@ class Trainer:
         txt= "Smear mu, s.d.: " + str(measurement.getMean())
         txt+= ", " + str(measurement.getSigma()) + ", eff.: "
         txt+= str(measurement.getLeff())
-        txt+= ", o/u-flow: " + str(loufl) + ", function: " + self.optfun
+        txt+= ", o/u-flow: " + str(loufl) + ", function: " + self.opttfun
         print txt
         # Create response matrix object:
-        bininfo= self.bininfo.create( self.optfun )
-        response= RooUnfoldResponse( bininfo["mbins"],
-                                     bininfo["mlo"],
-                                     bininfo["mhi"],
-                                     # bininfo["tbins"],
-                                     bininfo["tbins"]*bininfo["nrebin"],
-                                     bininfo["tlo"],
-                                     bininfo["thi"] )
+        response= RooUnfoldResponse( self.bininfo["mbins"],
+                                     self.bininfo["mlo"],
+                                     self.bininfo["mhi"],
+                                     self.bininfo["tbins"]*self.bininfo["nrebin"],
+                                     self.bininfo["tlo"],
+                                     self.bininfo["thi"] )
         response.UseOverflow( loufl )
         for i in xrange( 100000 ):
             xt, x= measurement.generate( self.trainfun )
@@ -112,9 +111,9 @@ class Trainer:
 class Tester:
 
     def __init__( self, bininfo, optfun ):
-        self.bininfo= bininfo
+        self.bininfo= bininfo.create( optfun )
+        self.testfun= createFunction( self.bininfo, optfun, "test_"+optfun )
         self.optfun= optfun
-        self.testfun= createFunction( bininfo, optfun, "test"+optfun )
         return
 
     # Generate test distributions:
@@ -128,16 +127,14 @@ class Tester:
         return hTrue, hMeas
 
     def makeTestHistos( self ):
-        bininfo= self.bininfo.create( self.optfun )
         hTrue= TH1D( "true", "Test Truth",
-                     # self.bininfo["tbins"],
-                     bininfo["tbins"]*bininfo["nrebin"],
-                     bininfo["tlo"],
-                     bininfo["thi"] )
+                     self.bininfo["tbins"]*self.bininfo["nrebin"],
+                     self.bininfo["tlo"],
+                     self.bininfo["thi"] )
         hMeas= TH1D( "meas", "Test Measured",
-                     bininfo["mbins"],
-                     bininfo["mlo"],
-                     bininfo["mhi"] )
+                     self.bininfo["mbins"],
+                     self.bininfo["mlo"],
+                     self.bininfo["mhi"] )
         return hTrue, hMeas
 
 class UnfoldTester:
@@ -193,7 +190,6 @@ class UnfoldTester:
 
 # Create functions for training and testing:
 def createFunction( bininfo, optfun, name ):
-    bininfo= bininfo.create( optfun )
     if "exp" in optfun:
         fun= TF1( name, "exp(-x/3.0)",
                   bininfo["tlo"], bininfo["thi"] )
@@ -205,7 +201,8 @@ def createFunction( bininfo, optfun, name ):
                   bininfo["tlo"], bininfo["thi"] )
     elif "blobel" in optfun:
         def blobelFun( xx ):
-            xxx= xx[0]
+            # xxx= xx[0]
+            xxx= xx[0]/5.0
             b= [ 1.0, 10.0, 5.0 ]
             x= [ 0.4, 0.8, 1.5 ]
             g= [ 2.0, 0.2, 0.2 ]
@@ -248,10 +245,12 @@ class BinInfo:
         elif "blobel" in optfun:
             bininfo= { "tbins": 12,
                        "tlo": 0.0,
-                       "thi": 2.0,
+                       # "thi": 2.0,
+                       "thi": 10.0,
                        "mbins": 40,
                        "mlo": 0.0,
-                       "mhi": 2.0 }
+                       # "mhi": 2.0 }
+                       "mhi": 10.0 }
         bininfo["nrebin"]= self.nrebin
         return bininfo
 
@@ -302,7 +301,7 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
     else:
         bininfo= BinInfo()
         unfoldtester= UnfoldTester( optunf )
-    trainer= Trainer( bininfo, opttfun )
+    trainer= Trainer( bininfo, opttfun, optfun )
     tester= Tester( bininfo, optfun )
     hbininfo= bininfo.create( optfun )
     dx= hbininfo["mhi"]
@@ -341,16 +340,18 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
                     hPulls.Fill( hReco.GetBinCenter( ibin ), pull )
             chisq= unfold.Chi2( hTrue, 2 )
             hChisq.Fill( TMath.Prob( chisq, hTrue.GetNbinsX() ) )
-            chisqm= unfold.Chi2measured( hMeas )
+            chisqm= unfold.Chi2measured()
+            pchisqm= TMath.Prob( chisqm, hMeas.GetNbinsX()-hReco.GetNbinsX() )
+            print "Chisq measured=", chisqm, "P(chi^2)=", pchisqm
+            hChisqm.Fill( pchisqm )
 
-            print "Chisq measured:", chisqm
-
-            hChisqm.Fill( TMath.Prob( chisqm,
-                                      hMeas.GetNbinsX()-
-                                      hReco.GetNbinsX() ) )
         canv.cd( ipad )
+        gStyle.SetErrorX( 0 )
         hPulls.SetMinimum( -3.0 )
         hPulls.SetMaximum( 3.0 )
+        hPulls.SetMarkerSize( 1.0 )
+        hPulls.SetMarkerStyle( 20 )
+        hPulls.SetStats( False )
         hPulls.Draw()
         canv2.cd( ipad*2-1 )
         hChisq.Draw()
@@ -362,6 +363,10 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
     if loufl:
         fname+= "_oufl"
     canv.Print( fname + ".pdf" )
+    fname= "RooUnfoldTestChisq_" + optunf + "_" + opttfun + "_" + optfun
+    if loufl:
+        fname+= "_oufl"
+    canv2.Print( fname + ".pdf" )
         
     return
 
@@ -385,7 +390,7 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     else:
         bininfo= BinInfo()
         unfoldtester= UnfoldTester( optunf )
-    trainer= Trainer( bininfo, opttfun )
+    trainer= Trainer( bininfo, opttfun, optfun )
     tester= Tester( bininfo, optfun )
     hbininfo= bininfo.create( optfun )
     dx= hbininfo["mhi"]
@@ -396,17 +401,31 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
                                                           measurement,
                                                           response )
         hReco= unfold.Hreco( 2 )
+
+        hRecoMeasured= unfold.HrecoMeasured()
+
+        chisqm= unfold.Chi2measured()
+        pchisqm= TMath.Prob( chisqm, hMeas.GetNbinsX()-hReco.GetNbinsX() )
+        print "Chisq measured=", chisqm, "P(chi^2)=", pchisqm
+
         if hbininfo["nrebin"] > 1:
             hTrue= hTrue.Rebin( nrebin )
         histos.append( [ hTrue, hMeas, hReco ] )
         canv.cd( ipad )
+        gStyle.SetErrorX( 0 )
         hReco.SetTitle( optunf + ", smear mu, s.d.= " +
                         str(gmean) + ", " + str(sigma) +
                         ", train: " + funttxt + ", test: " + funtxt )
         hReco.SetYTitle( "Entries" )
         hReco.SetMinimum( 0.0 )
-        hReco.Draw()
-        hMeas.Draw( "same" )
+        hReco.SetMarkerStyle( 20 )
+        hReco.SetMarkerSize( 0.75 )
+        hReco.SetStats( False )
+        hReco.Draw( "pe" )
+        hRecoMeasured.Draw( "same" )
+        hMeas.SetMarkerStyle( 20 )
+        hMeas.SetMarkerSize( 0.5 )
+        hMeas.Draw( "samepe" )
         hTrue.SetLineColor( 8 )
         hTrue.Draw( "same" )
 
@@ -418,16 +437,17 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     return
 
 # Make all plots of unfolding tests:
-def doAllPlots( optunfs= "Bayes SVD TUnfold Invert Reverse BasisSplines" ):
+def doAllPlots( optunfs= "Bayes SVD TUnfold Invert Reverse BasisSplines",
+                ntest=10 ):
     optunftokens= optunfs.split()
     for optunf in optunftokens:
-        for optfun in [ "bw", "exp" ]:
+        for optfun in [ "bw", "exp", "blobel" ]:
             for opttfun in [ "", "gaus" ]:
                 for loufl in [ False, True ]:
                     featureSizePlots( optunf=optunf,
                                       optfun=optfun, opttfun=opttfun,
                                       loufl=loufl )
-                    plotPulls( optunf=optunf,
+                    plotPulls( optunf=optunf, ntest=ntest
                                optfun=optfun, opttfun=opttfun,
                                loufl=loufl )
     return
