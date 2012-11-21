@@ -81,6 +81,9 @@ public:
   const    TVectorD& Emeasured() const;   // Measured distribution errors as a TVectorD
   const    TMatrixD& GetMeasuredCov() const;   // Measured distribution covariance matrix
 
+  virtual TH1* HrecoMeasured();
+
+
   virtual TVectorD&  Vreco();
   virtual TMatrixD   Ereco  (ErrorTreatment witherror=kCovariance);
   virtual TVectorD   ErecoV (ErrorTreatment witherror=kErrors);
@@ -98,7 +101,7 @@ public:
   virtual Double_t   GetRegParm() const; // Get Regularisation Parameter
   Double_t Chi2 (const TH1* hTrue,ErrorTreatment DoChi2=kCovariance);
 
-  Double_t Chi2measured( const TH1* hMeas );
+  Double_t Chi2measured();
 
   Double_t GetMinParm() const;
   Double_t GetMaxParm() const;

@@ -496,18 +496,15 @@ Double_t RooUnfold::Chi2(const TH1* hTrue,ErrorTreatment DoChi2)
 }
 
 
-Double_t RooUnfold::Chi2measured( const TH1* hMeas ) {
+Double_t RooUnfold::Chi2measured() {
   TVectorD vReco= Vreco();
   TMatrixD A= _res->Mresponse();
   TVectorD yreco= A*vReco;
-  Double_t chisq= 0.0;
-  for( Int_t ibin= 0; ibin < _nm; ibin++ ) {
-    Double_t error= RooUnfoldResponse::GetBinError( hMeas, ibin, _overflow );
-    if( error > 0.0 ) {
-      chisq+= pow( (RooUnfoldResponse::GetBinContent( hMeas, ibin, _overflow )
-		    -yreco[ibin])/error, 2 );
-    }
-  }
+  TVectorD ymeasured= Vmeasured();
+  TVectorD delta= ymeasured - yreco;
+  TMatrixD Vinv= GetMeasuredCov();
+  InvertMatrix( Vinv, Vinv );
+  Double_t chisq= Vinv.Similarity( delta );
   return chisq;
 }
 
@@ -694,6 +691,21 @@ TH1* RooUnfold::Hreco (ErrorTreatment withError)
   }
 
   return reco;
+}
+
+
+TH1* RooUnfold::HrecoMeasured() {
+  TH1* hist= (TH1*) _meas->Clone( GetName() );
+  hist->Reset();
+  hist->SetTitle( GetTitle() );
+  TVectorD reco= Vreco();
+  TMatrixD A= _res->Mresponse();
+  TVectorD yreco= A*reco;
+  for( Int_t i= 0; i < _nm; i++ ) {
+    Int_t j= RooUnfoldResponse::GetBin( hist, i, _overflow );
+    hist->SetBinContent( j, yreco(i) );
+  }
+  return hist;
 }
 
 void RooUnfold::GetSettings()
