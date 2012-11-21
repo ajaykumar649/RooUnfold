@@ -89,10 +89,11 @@ public:
   virtual void PrintTable( std::ostream& o, const TH1* hTrue, 
 			   ErrorTreatment withError );
   virtual TH1* Hreco( ErrorTreatment withError );
+  virtual TH1* HrecoMeasured();
   // Set/get Regularisation Parameter tau:
   virtual void SetRegParm( Double_t tau );
   virtual Double_t GetRegParm() const; 
-  Double_t Chi2measured( const TH1* hMeas );
+  Double_t Chi2measured();
 
 
 protected:
@@ -114,6 +115,9 @@ private:
   Int_t _m0;
   Int_t _iauto;
   Double_t _tol;
+  TVectorD _measured;
+  TVectorD _reconstructed;
+  TMatrixDSym _vinv;
 
 public:
   ClassDef( RooUnfoldBasisSplines, 1 )

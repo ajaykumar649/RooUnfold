@@ -97,8 +97,8 @@ const TMatrixD* RooUnfoldBasisSplines::Impl() {
 
 // Subtract fakes:
 void RooUnfoldBasisSplines::SubtractFakes() {
-  _rec.ResizeTo( _nm );
-  _rec= Vmeasured();
+  _measured.ResizeTo( _nm );
+  _measured= Vmeasured();
   if( _res->FakeEntries() ) {
     TVectorD fakes= _res->Vfakes();
     Double_t fac= _res->Vmeasured().Sum();
@@ -110,7 +110,7 @@ void RooUnfoldBasisSplines::SubtractFakes() {
 	   << " fakes from measured distribution" << endl;
     }
     fakes*= fac;
-    _rec-= fakes;
+    _measured-= fakes;
   }
 }
 
@@ -152,7 +152,7 @@ TH1* RooUnfoldBasisSplines::Hreco( ErrorTreatment withError ) {
   TH1* reco= (TH1*) _res->Htruth()->Clone( GetName() ); 
   reco= reco->Rebin( _nrebin );
   reco->Reset();
-  reco->SetTitle (GetTitle());
+  reco->SetTitle( GetTitle() );
   if( !UnfoldWithErrors( withError ) ) withError= kNoError;
   if( !_unfolded ) return reco;
   for( Int_t i= 0; i < _nt; i++ ) {
@@ -169,32 +169,28 @@ TH1* RooUnfoldBasisSplines::Hreco( ErrorTreatment withError ) {
   return reco;
 }
 
-
-Double_t RooUnfoldBasisSplines::Chi2measured( const TH1* hMeas ) {
-  TVectorD vReco= Vreco();
-  TMatrixD A= _res->Mresponse();
-  Int_t nbint= A.GetNcols();
-  TMatrixD rbm= makeRebinMatrix( nbint, _nrebin );
-
-  A.T();
-  TMatrixD Arb= rbm*A;
-
-  A.Print();
-  Arb.Print();
-
-  TVectorD yreco= Arb*vReco;
-  Double_t chisq= 0.0;
-  for( Int_t ibin= 0; ibin < _nm; ibin++ ) {
-    Double_t error= RooUnfoldResponse::GetBinError( hMeas, ibin, _overflow );
-    if( error > 0.0 ) {
-      chisq+= pow( (RooUnfoldResponse::GetBinContent( hMeas, ibin, _overflow )
-		    -yreco[ibin])/error, 2 );
-    }
+TH1* RooUnfoldBasisSplines::HrecoMeasured() {
+  TH1* hist= (TH1*) _meas->Clone( GetName() );
+  hist->Reset();
+  hist->SetTitle( GetTitle() );
+  TVectorD yreco= _resm*_reconstructed;
+  for( Int_t i= 0; i < _nm; i++ ) {
+    Int_t j= RooUnfoldResponse::GetBin( hist, i, _overflow );
+    hist->SetBinContent( j, yreco(i) );
   }
-  return chisq;
+  return hist;
 }
 
 
+
+
+// Override for measured chi^2:
+Double_t RooUnfoldBasisSplines::Chi2measured() {
+  TVectorD yreco= _resm*_reconstructed;
+  TVectorD delta= _measured - yreco;
+  Double_t chisq= _vinv.Similarity( delta );
+  return chisq;
+}
 
 // Do the unfolding steps:
 void RooUnfoldBasisSplines::Unfold() {
@@ -202,36 +198,11 @@ void RooUnfoldBasisSplines::Unfold() {
   // Deal with fakes first:
   SubtractFakes();
 
-  // Get normalised response matrix:
+  // Initial number of control points:
   Int_t nbinm= _nm;
   Int_t nbint= _nt;
-  _resm.ResizeTo( nbinm, nbint );
-  _resm= _res->Mresponse();
-
-  // Get truth bin edges:
-  const TH1* hTruth= _res->Htruth();
-  TVectorD bins( nbint+1 );
-  for( Int_t ibin= 0; ibin < nbint+1; ibin++ ) {
-    bins[ibin]= hTruth->GetBinLowEdge( ibin+1 );
-  }
-
-  // Get measured values and (diagonal only) error matrix:
-  TVectorD y( _rec );
-  TVectorD errors( nbinm );
-  errors= Emeasured();
-  TMatrixDSym V( nbinm );
-  TMatrixDSym Vinv( nbinm );
-  for( Int_t ibin= 0; ibin < nbinm; ibin++ ) {
-    V(ibin,ibin)= pow( errors[ibin], 2 );
-    if( errors[ibin] > 0.0 ) {
-      Vinv(ibin,ibin)= 1.0/V(ibin,ibin);
-    }
-  }
-
-  // Initial number of control points:
   Int_t np= _m0;
   if( _m0 == 0 ) {
-    // np= Int_t( nbint/_nrebin*1.5 );
     np= nbint/_nrebin+2;
   }
   if( np > nbinm ) {
@@ -245,17 +216,37 @@ void RooUnfoldBasisSplines::Unfold() {
 	 << ", error matrix may be unreliable" << endl;
   }
 
+  // Get normalised response matrix:
+  _resm.ResizeTo( nbinm, nbint );
+  _resm= _res->Mresponse();
+
+  // Get inverted measured error matrix:
+  TMatrixD covm= GetMeasuredCov();
+  RooUnfold::InvertMatrix( covm, covm );
+  _vinv.ResizeTo( nbinm, nbinm );
+  for( Int_t ibin= 0; ibin < nbinm; ibin++ ) {
+    for( Int_t jbin= 0; jbin < nbinm; jbin++ ) {
+      _vinv(ibin,jbin)= covm(ibin,jbin);
+    }
+  }
+
   // Control point values, basis spline and curvature matrices:
+  const TH1* hTruth= _res->Htruth();
+  TVectorD bins( nbint+1 );
+  for( Int_t ibin= 0; ibin < nbint+1; ibin++ ) {
+    bins[ibin]= hTruth->GetBinLowEdge( ibin+1 );
+  }
   TVectorD cppos= makeControlpoints( bins, np );
   TMatrixD B= makeBasisSplineMatrix( bins, cppos );
-  TMatrixDSym C= makeCurvatureMatrix( np );
   TMatrixD AB= _resm*B;
+  TMatrixDSym C= makeCurvatureMatrix( np );
 
   // Test and possibly set regularisation parameter:
   Int_t npeff= np;
   if( _iauto > 0 ) {
     TVectorD cpeigenvalues;
-    Double_t opttau= findTauFromNoise( AB, y, Vinv, np, cpeigenvalues );
+    Double_t opttau= findTauFromNoise( AB, _measured, _vinv, np, 
+				       cpeigenvalues );
     if( verbose() >= 1 ) {
       npeff= m0FromTau( opttau, cpeigenvalues, 0 );
       cout << "RooUnfoldBasisSplines::Unfold: recommended tau from noise: " 
@@ -277,8 +268,8 @@ void RooUnfoldBasisSplines::Unfold() {
   // AB is product of response matrix with basis spline matrix:
   TMatrixD ABT( AB );
   ABT.T();
-  TMatrixD h= ABT*Vinv;
-  TMatrixDSym H( Vinv );
+  TMatrixD h= ABT*_vinv;
+  TMatrixDSym H( _vinv );
   H.SimilarityT( AB );
   TMatrixDSym ABC= H + _tau*C;
   // Use explicit SVD inversion:
@@ -297,8 +288,10 @@ void RooUnfoldBasisSplines::Unfold() {
   }
   TMatrixDSym ABCinv( np, ABCsvdinv.GetMatrixArray() );
   TMatrixD ABCinvh= ABCinv*h;
-  TVectorD p= ABCinvh*y;
+  TVectorD p= ABCinvh*_measured;
   TVectorD t= B*p;
+  _reconstructed.ResizeTo( nbint );
+  _reconstructed= t;
 
   // Rebin solution:
   TMatrixD rbm= makeRebinMatrix( nbint, _nrebin );
@@ -318,8 +311,9 @@ void RooUnfoldBasisSplines::Unfold() {
   }
 
   // Chi^2 values:
-  TVectorD delta= y-AB*p;
-  Double_t chisq= Vinv.Similarity( delta );
+  // TVectorD delta= _measured - AB*p;
+  // Double_t chisq= _vinv.Similarity( delta );
+  Double_t chisq= Chi2measured();
   Double_t chisqcurv= _tau*C.Similarity( p );
   Int_t ndof= nbinm-np;
   cout << "RooUnfoldBasisSplines::Unfold: Chi^2 of solution=";
@@ -368,7 +362,7 @@ void RooUnfoldBasisSplines::Unfold() {
       Dhalf(ip,ip)= sqrt(Heigenvalues[ip]);
       Dminushalf(ip,ip)= 1.0/Dhalf(ip,ip);
     }
-    TVectorD q= Dminushalf*UhT*h*y;
+    TVectorD q= Dminushalf*UhT*h*_measured;
     TVectorD pp= Uh*Dminushalf*q;
     cout << "RooUnfoldBasisSplines::Unfold: eigenvalues of H" << endl;
     Heigenvalues.Print();
@@ -406,7 +400,7 @@ void RooUnfoldBasisSplines::Unfold() {
     cout << "RooUnfoldBasisSplines::Unfold: reg. factors sum: " 
 	 << regfsum << endl;
     TMatrixD Q= UcpT*Dminushalf*UhT*h;
-    TVectorD qp= Q*y;
+    TVectorD qp= Q*_measured;
     TVectorD qpp= UnitplustauSinv*qp;
     TVectorD ppp= Uh*Dminushalf*Ucp*qpp;
     cout << "RooUnfoldBasisSplines::Unfold: reg. eigenvalue solution q':" 
