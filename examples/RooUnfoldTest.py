@@ -2,7 +2,8 @@
 
 from ROOT import gRandom, TH1, TH1D, gROOT, cout, TMath, gStyle
 
-gROOT.LoadMacro( "/home/skluth/unfold/RooUnfold/libRooUnfold.so" )
+
+gROOT.LoadMacro( "$HOME/unfold/RooUnfold/libRooUnfold.so" )
 
 from ROOT import RooUnfoldResponse
 from ROOT import RooUnfoldBayes
@@ -285,6 +286,9 @@ def plotPulls( optunf="Bayes", ntest=10, leff=True, loufl=False,
     if opttfun == "":
         opttfun= optfun
 
+    if optfun == "blobel":
+        gmean= 0.0
+
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
 
     global histos, canv, canv2
@@ -377,6 +381,9 @@ def featureSizePlots( optunf="Bayes", leff=True, optfun="exp", opttfun="",
     if opttfun == "":
         opttfun= optfun
 
+    if optfun == "blobel":
+        gmean= 0.0
+
     funttxt, funtxt= funtxts( opttfun, optfun, leff, loufl )
 
     global hReco, hMeas, hTrue, hPulls, canv, histos
@@ -447,7 +454,7 @@ def doAllPlots( optunfs= "Bayes SVD TUnfold Invert Reverse BasisSplines",
                     featureSizePlots( optunf=optunf,
                                       optfun=optfun, opttfun=opttfun,
                                       loufl=loufl )
-                    plotPulls( optunf=optunf, ntest=ntest
+                    plotPulls( optunf=optunf, ntest=ntest,
                                optfun=optfun, opttfun=opttfun,
                                loufl=loufl )
     return
